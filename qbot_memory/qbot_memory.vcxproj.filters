@@ -15,20 +15,22 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="thread_pool.ixx">
+    <ClCompile Include="memory.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="SQLite.ixx">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="faiss.ixx">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="memory.ixx">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="exception.ixx">
-      <Filter>源文件</Filter>
-    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="exception.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="sqlite.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="thread_pool.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="memory.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

@@ -1,8 +1,16 @@
-export module memory:thread_pool;
+#pragma once
+#include <atomic>
+#include <condition_variable>
+#include <functional>
+#include <future>
+#include <mutex>
+#include <queue>
+#include <thread>
+#include <utility>
+#include <vector>
 
-import std;
 
-export namespace memory::thread_pool
+namespace memory::thread_pool
 {
 	template <std::size_t threads = 4, std::size_t max_tasks = 64>
 	class thread_pool

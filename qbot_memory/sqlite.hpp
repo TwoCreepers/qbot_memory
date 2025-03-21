@@ -1,17 +1,20 @@
-export module memory:sqlite;
-import std;
-import :exception;
-import <sqlite3.h>;
+#pragma once
 
-/*
-* 不应导出符号的命名空间
-*/
+#include "exception.hpp"
+#include <any>
+#include <atomic>
+#include <cstdint>
+#include <functional>
+#include <memory>
+#include <sqlite3.h>
+#include <stdexcept>
+#include <string>
+#include <string_view>
+#include <unordered_map>
+#include <utility>
+#include <vector>
+
 namespace memory::sqlite
-{
-
-}
-
-export namespace memory::sqlite
 {
 
 	using exec_callback_func_ptr = int(void*, int, char**, char**);
@@ -26,13 +29,13 @@ export namespace memory::sqlite
 		}
 		~database() { close(); }
 		database(const database& _That) = delete;
-		database(database&& _That)
+		database(database&& _That) noexcept
 		{
 			this->m_db = std::move(_That.m_db);
 			_That.m_db = nullptr;
 		}
 		database& operator=(const database& _That) = delete;
-		database& operator=(database&& _That)
+		database& operator=(database&& _That) noexcept
 		{
 			this->m_db = std::move(_That.m_db);
 			_That.m_db = nullptr;
@@ -40,7 +43,8 @@ export namespace memory::sqlite
 		}
 		void open(std::string_view path)
 		{
-			if (sqlite3_open(path.data(), &m_db) != SQLITE_OK) {
+			if (sqlite3_open(path.data(), &m_db) != SQLITE_OK)
+			{
 				close();
 				throw exception::sqlite_runtime_exception(sqlite3_errmsg(m_db));
 				return;
@@ -62,7 +66,8 @@ export namespace memory::sqlite
 		{
 			char* errMsg = nullptr;
 			int res;
-			if (res = sqlite3_exec(m_db, sql.c_str(), *(callback_func.target<exec_callback_func_ptr>()), user_ptr, &errMsg) != SQLITE_OK) {
+			if (res = sqlite3_exec(m_db, sql.c_str(), *(callback_func.target<exec_callback_func_ptr>()), user_ptr, &errMsg) != SQLITE_OK)
+			{
 				auto error = exception::sqlite_runtime_exception(errMsg);
 				sqlite3_free(errMsg);
 				throw error;
@@ -112,8 +117,7 @@ export namespace memory::sqlite
 	class stmt_buffer
 	{
 	public:
-		stmt_buffer() = default;
-		stmt_buffer(sqlite3_stmt* stmt, int i) :m_column_type{ static_cast<SQLite_Ty>(sqlite3_column_type(stmt, i)) }
+		stmt_buffer(sqlite3_stmt* stmt, int i) :m_column_type{ static_cast<SQLite_Ty>(sqlite3_column_type(stmt, i)) }, m_any{}
 		{
 			switch (m_column_type)
 			{
@@ -158,7 +162,7 @@ export namespace memory::sqlite
 			this->m_any = _That.m_any;
 			this->m_column_type = _That.m_column_type;
 		}
-		stmt_buffer(stmt_buffer&& _That)
+		stmt_buffer(stmt_buffer&& _That) noexcept 
 		{
 			this->m_any = std::move(_That.m_any);
 			this->m_column_type = std::move(_That.m_column_type);
@@ -169,7 +173,7 @@ export namespace memory::sqlite
 			this->m_column_type = _That.m_column_type;
 			return *this;
 		}
-		stmt_buffer& operator=(stmt_buffer&& _That)
+		stmt_buffer& operator=(stmt_buffer&& _That) noexcept 
 		{
 			this->m_any = std::move(_That.m_any);
 			this->m_column_type = std::move(_That.m_column_type);
@@ -229,14 +233,16 @@ export namespace memory::sqlite
 				throw exception::double_transaction_exception();
 			}
 			const char* sql = nullptr;
-			switch (level) {
+			switch (level)
+			{
 			case DEFAULT:    sql = "BEGIN;"; break;
 			case DEFERRED:  sql = "BEGIN DEFERRED;"; break;
 			case IMMEDIATE: sql = "BEGIN IMMEDIATE;"; break;
 			case EXCLUSIVE:  sql = "BEGIN EXCLUSIVE;"; break;
 			default: sql = "BEGIN;"; break;
 			}
-			if (m_db->execute(sql) != SQLITE_OK) {
+			if (m_db->execute(sql) != SQLITE_OK)
+			{
 				throw exception::sqlite_runtime_exception("Failed to begin transaction");
 			}
 			m_active = true; // 事务成功启动
@@ -309,7 +315,7 @@ export namespace memory::sqlite
 			close();
 		}
 		stmt(const stmt& _That) = delete;
-		stmt(stmt&& _That)
+		stmt(stmt&& _That) noexcept
 		{
 			this->m_stmt = std::move(_That.m_stmt);
 			_That.m_stmt = nullptr;

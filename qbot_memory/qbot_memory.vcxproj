@@ -131,11 +131,13 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="exception.ixx" />
-    <ClCompile Include="faiss.ixx" />
-    <ClCompile Include="memory.ixx" />
-    <ClCompile Include="SQLite.ixx" />
-    <ClCompile Include="thread_pool.ixx" />
+    <ClCompile Include="memory.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="exception.hpp" />
+    <ClInclude Include="memory.h" />
+    <ClInclude Include="sqlite.hpp" />
+    <ClInclude Include="thread_pool.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

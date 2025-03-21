@@ -1,8 +1,11 @@
-export module memory:exception;
+#pragma once
 
-import std;
+#include <exception>
+#include <sstream>
+#include <stacktrace>
+#include <string>
 
-export namespace memory::exception
+namespace memory::exception
 {
 	class exception : public std::exception
 	{
