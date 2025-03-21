@@ -1,72 +1,18 @@
 export module memory:sqlite;
 import std;
+import :exception;
 import <sqlite3.h>;
 
 /*
 * 不应导出符号的命名空间
 */
-namespace sqlite
+namespace memory::sqlite
 {
 
 }
 
-export namespace sqlite
+export namespace memory::sqlite
 {
-	namespace exception
-	{
-		class exception : public std::exception
-		{
-		public:
-			exception(const char* msg = "Unknown exception.") :m_message(msg), m_stacktrace{ std::stacktrace::current() }
-			{
-				std::ostringstream oss;
-				oss << "{\n"
-					<< R"("message": ")" << m_message << R"(",)" << '\n'
-					<< R"("stacktrace":")" << '\n' << m_stacktrace << "\"\n"
-					<< '}';
-				m_what_str = oss.str();
-			}
-			virtual ~exception() noexcept = default;
-
-			virtual std::string msg() const noexcept { return m_message; }
-			virtual std::stacktrace stacktrace() const noexcept { return m_stacktrace; }
-			virtual const char* what() const noexcept override { return m_what_str.c_str(); }
-		private:
-			std::string m_message;
-			std::stacktrace m_stacktrace;
-			std::string m_what_str;
-		};
-		class runtime_exception : public exception
-		{
-		public:
-			runtime_exception(const char* msg = "Unknown runtime exception.") : exception(msg) {}
-			virtual ~runtime_exception() = default;
-		};
-		class sqlite_runtime_exception :public runtime_exception
-		{
-		public:
-			sqlite_runtime_exception(const char* msg = "Unknown sqlite runtime exception.") : runtime_exception(msg) {}
-			virtual ~sqlite_runtime_exception() = default;
-		};
-		class transaction_exception : public sqlite_runtime_exception
-		{
-		public:
-			transaction_exception(const char* msg = "Unknown transaction exception.") :sqlite_runtime_exception(msg) {}
-			virtual ~transaction_exception() = default;
-		};
-		class double_transaction_exception : public transaction_exception
-		{
-		public:
-			double_transaction_exception(const char* msg = "Double transaction exception.") :transaction_exception(msg) {}
-			virtual ~double_transaction_exception() = default;
-		};
-		class using_close_transaction_exception : public transaction_exception
-		{
-		public:
-			using_close_transaction_exception(const char* msg = "Using close transaction exception.") :transaction_exception(msg) {}
-			virtual ~using_close_transaction_exception() = default;
-		};
-	}
 
 	using exec_callback_func_ptr = int(void*, int, char**, char**);
 	using exec_callback_func = std::function<exec_callback_func_ptr>;
@@ -130,6 +76,17 @@ export namespace sqlite
 				throw exception::sqlite_runtime_exception("Database ptr is nullptr");
 			}
 			return m_db;
+		}
+		void load_extension(const std::string& extension_path)
+		{
+			char* errMsg = nullptr;
+			int res;
+			if (res = sqlite3_load_extension(m_db, extension_path.c_str(), nullptr, &errMsg) != SQLITE_OK)
+			{
+				auto error = exception::sqlite_runtime_exception(errMsg);
+				sqlite3_free(errMsg);
+				throw error;
+			}
 		}
 	private:
 		sqlite3* m_db;
@@ -390,20 +347,8 @@ export namespace sqlite
 			static_assert(false, "使用了一个bind函数不支持的类型");
 			return sqlite3_bind_null(m_stmt, index);
 		}
-		template <class T>
-		int bind(int index, T&& value)
-		{
-			static_assert(false, "使用了一个bind函数不支持的类型");
-			return sqlite3_bind_null(m_stmt, index);
-		}
-		template <class T>
-		int bind(int index, const T&& value)
-		{
-			static_assert(false, "使用了一个bind函数不支持的类型");
-			return sqlite3_bind_null(m_stmt, index);
-		}
 		template<>
-		int bind<int>(int index, const int&& value)
+		int bind<int>(int index, int value)
 		{
 			return sqlite3_bind_int(m_stmt, index, value);
 		}
@@ -423,19 +368,19 @@ export namespace sqlite
 			return sqlite3_bind_double(m_stmt, index, value);
 		}
 		template<>
-		int bind<std::string_view>(int index, std::string_view value)
-		{
-			return sqlite3_bind_text(m_stmt, index, value.data(), static_cast<int>(value.size()), SQLITE_TRANSIENT);
-		}
-		template<>
-		int bind<std::string>(int index, const std::string&& value)
-		{
-			return sqlite3_bind_text(m_stmt, index, value.c_str(), static_cast<int>(value.size()), SQLITE_TRANSIENT);
-		}
-		template<>
 		int bind<const char*>(int index, const char* value)
 		{
 			return sqlite3_bind_text(m_stmt, index, value, -1, SQLITE_TRANSIENT);
+		}
+
+		int bind(int index, std::string_view value, sqlite3_destructor_type flag = SQLITE_TRANSIENT)
+		{
+			return sqlite3_bind_text(m_stmt, index, value.data(), static_cast<int>(value.size()), flag);
+		}
+
+		int bind(int index, const std::string& value, sqlite3_destructor_type flag = SQLITE_TRANSIENT)
+		{
+			return sqlite3_bind_text(m_stmt, index, value.data(), static_cast<int>(value.size()), flag);
 		}
 
 		int get_column_int(int index)
