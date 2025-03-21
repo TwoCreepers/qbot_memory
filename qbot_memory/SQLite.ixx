@@ -253,7 +253,7 @@ export namespace sqlite
 	class transaction
 	{
 	public:
-		transaction(database& db, transaction_level level = DEFAULT) :m_db{ db }
+		transaction(std::shared_ptr<database> db, transaction_level level = DEFAULT) :m_db{ db }
 		{
 			open(level);
 		}
@@ -279,7 +279,7 @@ export namespace sqlite
 			case EXCLUSIVE:  sql = "BEGIN EXCLUSIVE;"; break;
 			default: sql = "BEGIN;"; break;
 			}
-			if (m_db.execute(sql) != SQLITE_OK) {
+			if (m_db->execute(sql) != SQLITE_OK) {
 				throw exception::sqlite_runtime_exception("Failed to begin transaction");
 			}
 			m_active = true; // 事务成功启动
@@ -294,7 +294,7 @@ export namespace sqlite
 			{
 				throw exception::using_close_transaction_exception();
 			}
-			int rc = m_db.execute("COMMIT;");
+			int rc = m_db->execute("COMMIT;");
 			{
 				if (rc == SQLITE_OK) m_active = false;
 			}
@@ -308,7 +308,7 @@ export namespace sqlite
 			{
 				throw exception::using_close_transaction_exception();
 			}
-			int rc = m_db.execute("ROLLBACK;");
+			int rc = m_db->execute("ROLLBACK;");
 			{
 				if (rc == SQLITE_OK) m_active = false;
 			}
@@ -321,9 +321,9 @@ export namespace sqlite
 			{
 				throw exception::using_close_transaction_exception();
 			}
-			return m_db.execute(sql, callback_func, user_ptr);
+			return m_db->execute(sql, callback_func, user_ptr);
 		}
-		database& get()
+		std::shared_ptr<database> get()
 		{
 			if (!m_active)
 			{
@@ -332,20 +332,20 @@ export namespace sqlite
 			return m_db;
 		}
 	private:
-		database& m_db;
+		std::shared_ptr<database> m_db;
 		std::atomic_bool m_active;
 	};
 
 	class stmt
 	{
 	public:
-		stmt(database& db, std::string_view sql, unsigned int prepFlags = NULL)
+		stmt(std::shared_ptr<database> db, std::string_view sql, unsigned int prepFlags = NULL)
 		{
 			open(db, sql, prepFlags);
 		}
-		stmt(transaction& ta, std::string_view sql, unsigned int prepFlags = NULL)
+		stmt(std::shared_ptr<transaction> ta, std::string_view sql, unsigned int prepFlags = NULL)
 		{
-			open(ta.get(), sql, prepFlags);
+			open(ta->get(), sql, prepFlags);
 		}
 		~stmt()
 		{
@@ -364,9 +364,9 @@ export namespace sqlite
 			_That.m_stmt = nullptr;
 			return *this;
 		}
-		void open(database& db, std::string_view sql, unsigned int prepFlags = NULL)
+		void open(std::shared_ptr<database> db, std::string_view sql, unsigned int prepFlags = NULL)
 		{
-			auto res = sqlite3_prepare_v3(db.get(), sql.data(), static_cast<int>(sql.size()), prepFlags, &m_stmt, nullptr);
+			auto res = sqlite3_prepare_v3(db->get(), sql.data(), static_cast<int>(sql.size()), prepFlags, &m_stmt, nullptr);
 			if (res != SQLITE_OK)
 			{
 				throw exception::sqlite_runtime_exception();
