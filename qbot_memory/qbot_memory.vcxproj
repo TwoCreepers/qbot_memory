@@ -131,6 +131,8 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="faiss.ixx" />
+    <ClCompile Include="memory.ixx" />
     <ClCompile Include="SQLite.ixx" />
     <ClCompile Include="thread_pool.ixx" />
   </ItemGroup>

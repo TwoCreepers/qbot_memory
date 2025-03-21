@@ -21,5 +21,11 @@
     <ClCompile Include="SQLite.ixx">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="faiss.ixx">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="memory.ixx">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
