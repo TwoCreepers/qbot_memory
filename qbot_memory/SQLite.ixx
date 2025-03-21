@@ -438,6 +438,26 @@ export namespace sqlite
 			return sqlite3_bind_text(m_stmt, index, value, -1, SQLITE_TRANSIENT);
 		}
 
+		int get_column_int(int index)
+		{
+			return sqlite3_column_int(m_stmt, index);
+		}
+
+		int64_t get_column_int64(int index)
+		{
+			return sqlite3_column_int64(m_stmt, index);
+		}
+
+		double get_column_double(int index)
+		{
+			return sqlite3_column_double(m_stmt, index);
+		}
+
+		const unsigned char* get_column_str(int index)
+		{
+			return sqlite3_column_text(m_stmt, index);
+		}
+
 		int step(stmt_step_ret_t& in)
 		{
 			int rc = sqlite3_step(m_stmt);
