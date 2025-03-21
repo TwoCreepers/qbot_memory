@@ -131,6 +131,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="exception.ixx" />
     <ClCompile Include="faiss.ixx" />
     <ClCompile Include="memory.ixx" />
     <ClCompile Include="SQLite.ixx" />
