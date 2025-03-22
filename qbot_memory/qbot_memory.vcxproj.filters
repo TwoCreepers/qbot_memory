@@ -35,5 +35,8 @@
     <ClInclude Include="faiss.hpp">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="py.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

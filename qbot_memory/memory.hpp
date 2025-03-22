@@ -1,15 +1,17 @@
 #include "exception.hpp"
 #include "faiss.hpp"
+#include "py.hpp"
 #include "sqlite.hpp"
-#include <faiss/Index.h>
 #include <faiss/index_io.h>
-#include <faiss/IndexHNSW.h>
 #include <filesystem>
 #include <format>
+#include <functional>
 #include <memory>
 #include <new>
+#include <ranges>
 #include <sqlite3.h>
 #include <string>
+#include <vector>
 
 namespace fs = std::filesystem;
 
@@ -29,7 +31,7 @@ namespace memory
 	public:
 		database(const std::string& db_file_path, const std::string& simple_path, const std::string& simple_dict_path) : m_db{ new sqlite::database(db_file_path) }
 		{
-			sqlite3_enable_load_extension(m_db->get(), 1);
+			m_db->enable_load_extension();
 			m_db->load_extension(simple_path);
 			sqlite::stmt jieba_dict_sql{ m_db, "SELECT jieba_dict(?);" };
 			jieba_dict_sql.bind(1, simple_dict_path, SQLITE_STATIC);
@@ -65,7 +67,13 @@ namespace memory
 	class table
 	{
 	public:
-		table(std::shared_ptr<database> db, const std::string& name, const int vector_dimension, const int HNWS_max_connect = 32) : m_db(db->get()), m_name(name)
+		table(std::shared_ptr<database> db, const std::string& name, const int vector_dimension, const int HNWS_max_connect = 32) 
+			: m_db(db->get()), 
+			m_name(name),
+			m_insert_main_data(m_db, std::format(R"(INSERT INTO {} 
+			(timestamp, sender, sender_uuid, message, forget_probability, faiss_index_id) 
+			VALUES (?, ?, ?, ?, ?, ?))", m_name), SQLITE_PREPARE_NO_VTAB | SQLITE_PREPARE_PERSISTENT),
+			m_insert_fts_data(m_db, std::format(R"(INSERT INTO {}-fts (rowid, message) VALUES (?, ?))", m_name), SQLITE_PREPARE_PERSISTENT)
 		{
 			sqlite::transaction ts(db->get(), sqlite::transaction_level::EXCLUSIVE);
 
@@ -80,6 +88,65 @@ namespace memory
 		{
 			faiss::write_index(m_faiss_index.get(), m_faiss_fullpath.string().c_str());
 		}
+		void set_vector(std::function<std::vector<float>(std::string)> func)
+		{
+			m_generate_vector_callback = func;
+		}
+		void set_vectors(std::function < std::vector<float>(std::vector<std::string>)> func)
+		{
+			m_generate_vectors_callback = func;
+		}
+		void add(const insert_data& data)
+		{
+			auto vector = m_generate_vector_callback(data.message);
+			m_faiss_index->add(1, vector.data());
+
+			m_insert_fts_data.reset();
+			m_insert_main_data.reset();
+
+			m_insert_main_data.bind(6, m_faiss_index_new_id++);
+			m_insert_main_data.bind(1, data.time);
+			if (data.sender.empty()) { m_insert_main_data.bind(2, nullptr); }
+			else { m_insert_main_data.bind(2, data.sender); }
+			m_insert_main_data.bind(3, data.sender_uuid);
+			m_insert_main_data.bind(4, data.message);
+			m_insert_main_data.bind(5, data.forget_probability);
+			m_insert_fts_data.bind(1, data.message);
+			sqlite::transaction ts{ m_db };
+			m_insert_fts_data.step();
+			m_insert_main_data.step();
+			ts.commit();
+		}
+		void adds(const std::vector<insert_data>& datas)
+		{
+			auto vector = m_generate_vectors_callback(
+				datas | 
+				std::views::transform([](const insert_data& data) { return data.message; }) | 
+				std::ranges::to<std::vector<std::string>>()
+			);
+			m_faiss_index->add(datas.size(), vector.data());
+
+			m_insert_fts_data.reset();
+			m_insert_main_data.reset();
+
+			sqlite::transaction ts{ m_db };
+			for (const auto& i : datas)
+			{
+				m_insert_fts_data.reset();
+				m_insert_main_data.reset();
+				m_insert_main_data.bind(6, m_faiss_index_new_id++);
+				m_insert_main_data.bind(1, i.time);
+				if (i.sender.empty()) { m_insert_main_data.bind(2, nullptr); }
+				else { m_insert_main_data.bind(2, i.sender); }
+				m_insert_main_data.bind(3, i.sender_uuid);
+				m_insert_main_data.bind(4, i.message);
+				m_insert_main_data.bind(5, i.forget_probability);
+				m_insert_fts_data.bind(1, i.message);
+				m_insert_fts_data.step();
+				m_insert_main_data.step();
+			}
+			ts.commit();
+		}
 	private:
 		std::string m_name;
 		std::shared_ptr<sqlite::database> m_db;
@@ -87,8 +154,15 @@ namespace memory
 		int m_HNSW_max_connect;
 		int m_vector_dimension;
 
+		std::size_t m_faiss_index_new_id = 0;
 		std::shared_ptr<f::faiss_index> m_faiss_index;
 		fs::path m_faiss_fullpath;
+
+		py::function<std::vector<float>(std::string)> m_generate_vector_callback;
+		py::function<std::vector<float>(std::vector<std::string>)> m_generate_vectors_callback;
+
+		sqlite::stmt m_insert_main_data;
+		sqlite::stmt m_insert_fts_data;
 
 		void try_create_table(sqlite::transaction& ts)
 		{

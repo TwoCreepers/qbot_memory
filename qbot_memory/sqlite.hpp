@@ -94,6 +94,16 @@ namespace memory::sqlite
 				throw error;
 			}
 		}
+		void enable_load_extension(int onoff = 1)
+		{
+			const int res = sqlite3_enable_load_extension(m_db, onoff);
+			if (res != SQLITE_OK)
+			{
+				auto errMsg = sqlite3_errmsg(m_db);
+				auto error = exception::sqlite_runtime_exception(errMsg);
+				throw error;
+			}
+		}
 	private:
 		sqlite3* m_db;
 	};
@@ -304,11 +314,11 @@ namespace memory::sqlite
 	class stmt
 	{
 	public:
-		stmt(std::shared_ptr<database> db, std::string_view sql, unsigned int prepFlags = SQLITE_PREPARE_NORMALIZE)
+		stmt(std::shared_ptr<database> db, std::string_view sql, unsigned int prepFlags = NULL)
 		{
 			open(db, sql, prepFlags);
 		}
-		stmt(transaction& ta, std::string_view sql, unsigned int prepFlags = SQLITE_PREPARE_NORMALIZE)
+		stmt(transaction& ta, std::string_view sql, unsigned int prepFlags = NULL)
 		{
 			open(ta.get(), sql, prepFlags);
 		}
@@ -329,7 +339,7 @@ namespace memory::sqlite
 			_That.m_stmt = nullptr;
 			return *this;
 		}
-		void open(std::shared_ptr<database> db, std::string_view sql, unsigned int prepFlags = SQLITE_PREPARE_NORMALIZE)
+		void open(std::shared_ptr<database> db, std::string_view sql, unsigned int prepFlags = NULL)
 		{
 			auto res = sqlite3_prepare_v3(db->get(), sql.data(), static_cast<int>(sql.size()), prepFlags, &m_stmt, nullptr);
 			if (res != SQLITE_OK)
@@ -353,6 +363,11 @@ namespace memory::sqlite
 		int bind(int index, T value)
 		{
 			static_assert(false, "使用了一个bind函数不支持的类型");
+			return sqlite3_bind_null(m_stmt, index);
+		}
+		template <>
+		int bind<nullptr_t>(int index, nullptr_t value)
+		{
 			return sqlite3_bind_null(m_stmt, index);
 		}
 		template<>
