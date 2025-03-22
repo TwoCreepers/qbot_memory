@@ -26,6 +26,25 @@ namespace memory
 		double forget_probability;
 	};
 
+	struct select_data
+	{
+		std::size_t id;
+		std::size_t time;
+		std::string sender;
+		std::string sender_uuid;
+		std::string message;
+	};
+
+	struct select_vector_data
+	{
+		std::size_t id;
+		std::size_t time;
+		std::string sender;
+		std::string sender_uuid;
+		std::string message;
+		double distance;
+	};
+
 	class database
 	{
 	public:
@@ -43,7 +62,8 @@ namespace memory
 				tablename TEXT NOT NULL,
 				vector_dimension INTEGER NOT NULL,
 				HNWS_max_connect INTEGER NOT NULL,
-				faiss_fullpath TEXT NOT NULL
+				faiss_fullpath TEXT NOT NULL,
+				faiss_new_id INTEGER NOT NULL
 				);
 				)");
 		}
@@ -67,13 +87,9 @@ namespace memory
 	class table
 	{
 	public:
-		table(std::shared_ptr<database> db, const std::string& name, const int vector_dimension, const int HNWS_max_connect = 32) 
-			: m_db(db->get()), 
-			m_name(name),
-			m_insert_main_data(m_db, std::format(R"(INSERT INTO {} 
-			(timestamp, sender, sender_uuid, message, forget_probability, faiss_index_id) 
-			VALUES (?, ?, ?, ?, ?, ?))", m_name), SQLITE_PREPARE_NO_VTAB | SQLITE_PREPARE_PERSISTENT),
-			m_insert_fts_data(m_db, std::format(R"(INSERT INTO {}-fts (rowid, message) VALUES (?, ?))", m_name), SQLITE_PREPARE_PERSISTENT)
+		table(std::shared_ptr<database> db, const std::string& name, const int vector_dimension, const int HNWS_max_connect = 32)
+			: m_db(db->get()),
+			m_name(name)
 		{
 			sqlite::transaction ts(db->get(), sqlite::transaction_level::EXCLUSIVE);
 
@@ -83,9 +99,33 @@ namespace memory
 
 			load_faiss_index();
 			ts.commit();
+
+			m_insert_main_data = sqlite::stmt( m_db, std::format(R"(INSERT INTO {} 
+			(timestamp, sender, sender_uuid, message, forget_probability, faiss_index_id) 
+			VALUES (?, ?, ?, ?, ?, ?);)", m_name), SQLITE_PREPARE_NO_VTAB | SQLITE_PREPARE_PERSISTENT );
+			m_insert_fts_data = sqlite::stmt(m_db, std::format(R"(INSERT INTO {}_fts (rowid, message) VALUES (?, ?);)", m_name), SQLITE_PREPARE_PERSISTENT);
+
+			m_select_main_data_id = sqlite::stmt(m_db, std::format(R"(SELECT id, timestamp, sender, sender_uuid, message, forget_probability, faiss_index_id FROM {} WHERE id = ?;)", m_name), SQLITE_PREPARE_NO_VTAB | SQLITE_PREPARE_PERSISTENT);
+			m_select_main_faiss_index_id = sqlite::stmt(m_db, std::format(R"(SELECT id, timestamp, sender, sender_uuid, message, forget_probability, faiss_index_id FROM {} WHERE faiss_index_id = ?;)", m_name), SQLITE_PREPARE_NO_VTAB | SQLITE_PREPARE_PERSISTENT);
+
+			m_select_main_sender_uuid = sqlite::stmt(m_db, std::format(R"(SELECT id, timestamp, sender, sender_uuid, message, forget_probability, faiss_index_id FROM {} WHERE sender_uuid = ? ORDER BY id DESC;)", m_name), SQLITE_PREPARE_NO_VTAB | SQLITE_PREPARE_PERSISTENT);
+			m_select_main_sender_uuid_limit = sqlite::stmt(m_db, std::format(R"(SELECT id, timestamp, sender, sender_uuid, message, forget_probability, faiss_index_id FROM {} WHERE sender_uuid = ? ORDER BY id DESC LIMIT ?;)", m_name), SQLITE_PREPARE_NO_VTAB | SQLITE_PREPARE_PERSISTENT);
+
+			m_select_main_data_id_no_message = sqlite::stmt(m_db, std::format(R"(SELECT id, timestamp, sender, sender_uuid, forget_probability, faiss_index_id FROM {} WHERE id = ?;)", m_name), SQLITE_PREPARE_NO_VTAB | SQLITE_PREPARE_PERSISTENT);
+
+			m_select_main_data_time_start = sqlite::stmt(m_db, std::format(R"(SELECT id, timestamp, sender, sender_uuid, message, forget_probability, faiss_index_id FROM {} WHERE timestamp > ? ORDER BY timestamp DESC;)", m_name), SQLITE_PREPARE_NO_VTAB | SQLITE_PREPARE_PERSISTENT);
+			m_select_main_data_time_end = sqlite::stmt(m_db, std::format(R"(SELECT id, timestamp, sender, sender_uuid, message, forget_probability, faiss_index_id FROM {} WHERE timestamp < ? ORDER BY timestamp DESC;)", m_name), SQLITE_PREPARE_NO_VTAB | SQLITE_PREPARE_PERSISTENT);
+			m_select_main_data_time_start_end = sqlite::stmt(m_db, std::format(R"(SELECT id, timestamp, sender, sender_uuid, message, forget_probability, faiss_index_id FROM {} WHERE timestamp > ? AND timestamp < ? ORDER BY timestamp DESC;)", m_name), SQLITE_PREPARE_NO_VTAB | SQLITE_PREPARE_PERSISTENT);
+		
+			m_select_fts_message = sqlite::stmt(m_db, std::format(R"(SELECT rowid, message, bm25(message) AS score FROM {} WHERE message MATCH ? ORDER BY score DESC;)", m_name), SQLITE_PREPARE_PERSISTENT);
+			m_select_fts_message_limit = sqlite::stmt(m_db, std::format(R"(SELECT rowid, message, bm25(message) AS score FROM {} WHERE message MATCH ? ORDER BY score DESC LIMIT ?;)", m_name), SQLITE_PREPARE_PERSISTENT);
 		}
 		~table()
 		{
+			sqlite::stmt update_faiss_new_id{m_db, R"(UPDATE __TABLE_MANAGE__ SET faiss_new_id = ? WHERE tablename = ?;)"};
+			update_faiss_new_id.bind(1, m_faiss_index_new_id);
+			update_faiss_new_id.bind(2, m_name);
+			update_faiss_new_id.step();
 			faiss::write_index(m_faiss_index.get(), m_faiss_fullpath.string().c_str());
 		}
 		void set_vector(std::function<std::vector<float>(std::string)> func)
@@ -111,19 +151,16 @@ namespace memory
 			m_insert_main_data.bind(3, data.sender_uuid);
 			m_insert_main_data.bind(4, data.message);
 			m_insert_main_data.bind(5, data.forget_probability);
-			m_insert_fts_data.bind(1, data.message);
 			sqlite::transaction ts{ m_db };
-			m_insert_fts_data.step();
 			m_insert_main_data.step();
+			m_insert_fts_data.bind(1, m_db->last_insert_rowid());
+			m_insert_fts_data.bind(2, data.message);
+			m_insert_fts_data.step();
 			ts.commit();
 		}
 		void adds(const std::vector<insert_data>& datas)
 		{
-			auto vector = m_generate_vectors_callback(
-				datas | 
-				std::views::transform([](const insert_data& data) { return data.message; }) | 
-				std::ranges::to<std::vector<std::string>>()
-			);
+			auto vector = generate_vectors(datas);
 			m_faiss_index->add(datas.size(), vector.data());
 
 			m_insert_fts_data.reset();
@@ -141,11 +178,105 @@ namespace memory
 				m_insert_main_data.bind(3, i.sender_uuid);
 				m_insert_main_data.bind(4, i.message);
 				m_insert_main_data.bind(5, i.forget_probability);
-				m_insert_fts_data.bind(1, i.message);
-				m_insert_fts_data.step();
 				m_insert_main_data.step();
+				m_insert_fts_data.bind(1, m_db->last_insert_rowid());
+				m_insert_fts_data.bind(2, i.message);
+				m_insert_fts_data.step();
 			}
 			ts.commit();
+		}
+		select_data search_id(const std::size_t id)
+		{
+			m_select_main_data_id.reset();
+			m_select_main_data_id.bind(1, id);
+			m_select_main_data_id.step();
+			return { m_select_main_data_id.get_column_uint64(0), 
+				m_select_main_data_id.get_column_uint64(1), 
+				(const char*)m_select_main_data_id.get_column_str(2),
+				(const char*)m_select_main_data_id.get_column_str(3) ,
+				(const char*)m_select_main_data_id.get_column_str(4) };
+		}
+		std::vector<select_data> searchs_uuid(const std::string& uuid)
+		{
+			m_select_main_sender_uuid.reset();
+			m_select_main_sender_uuid.bind(1, uuid);
+			std::vector<select_data> res;
+			while (m_select_main_sender_uuid.step())
+			{
+				res.emplace_back(m_select_main_sender_uuid.get_column_uint64(0),
+					m_select_main_sender_uuid.get_column_uint64(1),
+					(const char*)m_select_main_sender_uuid.get_column_str(2),
+					(const char*)m_select_main_sender_uuid.get_column_str(3),
+					(const char*)m_select_main_sender_uuid.get_column_str(4)
+				);
+			}
+			return res;
+		}
+		std::vector<select_data> searchs_uuid_limit(const std::string& uuid, const std::size_t limit)
+		{
+			m_select_main_sender_uuid_limit.reset();
+			m_select_main_sender_uuid_limit.bind(1, uuid);
+			m_select_main_sender_uuid_limit.bind(2, limit);
+			std::vector<select_data> res;
+			while (m_select_main_sender_uuid_limit.step())
+			{
+				res.emplace_back(m_select_main_sender_uuid_limit.get_column_uint64(0),
+					m_select_main_sender_uuid_limit.get_column_uint64(1),
+					(const char*)m_select_main_sender_uuid_limit.get_column_str(2),
+					(const char*)m_select_main_sender_uuid_limit.get_column_str(3),
+					(const char*)m_select_main_sender_uuid_limit.get_column_str(4)
+				);
+			}
+			return res;
+		}
+		std::vector<select_data> searchs_time_start(const std::size_t start)
+		{
+			m_select_main_data_time_start.reset();
+			m_select_main_data_time_start.bind(1, start);
+			std::vector<select_data> res;
+			while (m_select_main_data_time_start.step())
+			{
+				res.emplace_back(m_select_main_data_time_start.get_column_uint64(0),
+					m_select_main_data_time_start.get_column_uint64(1),
+					(const char*)m_select_main_data_time_start.get_column_str(2),
+					(const char*)m_select_main_data_time_start.get_column_str(3),
+					(const char*)m_select_main_data_time_start.get_column_str(4)
+				);
+			}
+			return res;
+		}
+		std::vector<select_data> searchs_time_end(const std::size_t end)
+		{
+			m_select_main_data_time_end.reset();
+			m_select_main_data_time_end.bind(1, end);
+			std::vector<select_data> res;
+			while (m_select_main_data_time_end.step())
+			{
+				res.emplace_back(m_select_main_data_time_end.get_column_uint64(0),
+					m_select_main_data_time_end.get_column_uint64(1),
+					(const char*)m_select_main_data_time_end.get_column_str(2),
+					(const char*)m_select_main_data_time_end.get_column_str(3),
+					(const char*)m_select_main_data_time_end.get_column_str(4)
+				);
+			}
+			return res;
+		}
+		std::vector<select_data> searchs_time_start_end(const std::size_t start, const std::size_t end)
+		{
+			m_select_main_data_time_start_end.reset();
+			m_select_main_data_time_start_end.bind(1, start);
+			m_select_main_data_time_start_end.bind(2, end);
+			std::vector<select_data> res;
+			while (m_select_main_data_time_start_end.step())
+			{
+				res.emplace_back(m_select_main_data_time_start_end.get_column_uint64(0),
+					m_select_main_data_time_start_end.get_column_uint64(1),
+					(const char*)m_select_main_data_time_start_end.get_column_str(2),
+					(const char*)m_select_main_data_time_start_end.get_column_str(3),
+					(const char*)m_select_main_data_time_start_end.get_column_str(4)
+				);
+			}
+			return res;
 		}
 	private:
 		std::string m_name;
@@ -164,6 +295,44 @@ namespace memory
 		sqlite::stmt m_insert_main_data;
 		sqlite::stmt m_insert_fts_data;
 
+		sqlite::stmt m_select_main_data_id;
+		sqlite::stmt m_select_main_data_id_no_message;
+		sqlite::stmt m_select_main_faiss_index_id;
+
+		sqlite::stmt m_select_main_sender_uuid;
+		sqlite::stmt m_select_main_sender_uuid_limit;
+
+		sqlite::stmt m_select_main_data_time_start;
+		sqlite::stmt m_select_main_data_time_end;
+		sqlite::stmt m_select_main_data_time_start_end;
+
+		sqlite::stmt m_select_fts_message;
+		sqlite::stmt m_select_fts_message_limit;
+
+		std::vector<float> generate_vectors(const std::vector<insert_data>& datas)
+		{
+			if (this->m_generate_vectors_callback)
+			{
+				return m_generate_vectors_callback(
+					datas |
+					std::views::transform([](const insert_data& data) { return data.message; }) |
+					std::ranges::to<std::vector<std::string>>()
+				);
+			}
+			else
+			{
+				std::vector<float> vector;
+				vector.reserve(datas.size());
+				for (const auto i : datas | std::views::transform([](const insert_data& data) { return data.message; }))
+				{
+					for (const auto& i : this->m_generate_vector_callback(i))
+					{
+						vector.emplace_back(i);
+					}
+				}
+				return vector;
+			}
+		}
 		void try_create_table(sqlite::transaction& ts)
 		{
 			ts.execute(std::format(R"(
@@ -177,7 +346,7 @@ namespace memory
 				faiss_index_id INTEGER NOT NULL);
 			)", m_name));
 			ts.execute(std::format(R"(
-				CREATE VIRTUAL TABLE IF NOT EXISTS {}-fts USING fts5(message, tokenize = 'simple');
+				CREATE VIRTUAL TABLE IF NOT EXISTS {}_fts USING fts5(message, tokenize = 'simple');
 			)", m_name));
 		}
 		void load_faiss_index()
@@ -199,16 +368,17 @@ namespace memory
 		{
 			sqlite::stmt where_table{ ts, R"(
 				SELECT COUNT(*) FROM __TABLE_MANAGE__ WHERE tablename = ?;
-			)"};
+			)" };
 			where_table.bind(1, name);
 			where_table.step();
 			if (where_table.get_column_int(0))
 			{
 				sqlite::stmt get_table_info{ ts, R"(
-					SELECT vector_dimension, faiss_fullpath, HNWS_max_connect FROM __TABLE_MANAGE__ WHERE tablename = ?;
-				)"};
+					SELECT vector_dimension, faiss_fullpath, HNWS_max_connect, faiss_new_id FROM __TABLE_MANAGE__ WHERE tablename = ?;
+				)" };
 				get_table_info.bind(1, name);
 				get_table_info.step();
+				m_faiss_index_new_id = get_table_info.get_column_uint64(3);
 				m_HNSW_max_connect = get_table_info.get_column_int(2);
 				m_faiss_fullpath = (const char*)(get_table_info.get_column_str(1));
 				m_vector_dimension = get_table_info.get_column_int(0);
@@ -219,12 +389,13 @@ namespace memory
 				m_vector_dimension = vector_dimension;
 				m_HNSW_max_connect = HNWS_max_connect;
 				sqlite::stmt insert_table_info{ ts, R"(
-					INSERT INTO __TABLE_MANAGE__ (tablename, vector_dimension, faiss_fullpath, HNWS_max_connect) VALUES (?, ?, ?, ?);
+					INSERT INTO __TABLE_MANAGE__ (tablename, vector_dimension, faiss_fullpath, HNWS_max_connect, faiss_new_id) VALUES (?, ?, ?, ?, ?);
 				)" };
 				insert_table_info.bind(1, m_name);
 				insert_table_info.bind(2, m_vector_dimension);
 				insert_table_info.bind(3, m_faiss_fullpath.string().c_str());
 				insert_table_info.bind(4, m_HNSW_max_connect);
+				insert_table_info.bind(5, m_faiss_index_new_id);
 				insert_table_info.step();
 			}
 		}

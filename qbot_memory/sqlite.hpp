@@ -104,6 +104,10 @@ namespace memory::sqlite
 				throw error;
 			}
 		}
+		sqlite_int64 last_insert_rowid()
+		{
+			return sqlite3_last_insert_rowid(m_db);
+		}
 	private:
 		sqlite3* m_db;
 	};
@@ -314,6 +318,7 @@ namespace memory::sqlite
 	class stmt
 	{
 	public:
+		stmt() = default;
 		stmt(std::shared_ptr<database> db, std::string_view sql, unsigned int prepFlags = NULL)
 		{
 			open(db, sql, prepFlags);
@@ -333,7 +338,7 @@ namespace memory::sqlite
 			_That.m_stmt = nullptr;
 		}
 		stmt& operator=(const stmt& _That) = delete;
-		stmt& operator=(stmt& _That)
+		stmt& operator=(stmt&& _That) noexcept
 		{
 			this->m_stmt = std::move(_That.m_stmt);
 			_That.m_stmt = nullptr;
