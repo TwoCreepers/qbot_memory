@@ -1,10 +1,10 @@
+#include "faiss.hpp"
 #include "memory.h"
 #include "sqlite.hpp"
 #include <filesystem>
 #include <memory>
 #include <new>
 #include <string>
-
 
 namespace fs = std::filesystem;
 
@@ -50,6 +50,20 @@ namespace memory
 	{
 		table(std::shared_ptr<database> db, const std::string& name, const std::size_t vector_dimension) : m_db(db), m_name(name)
 		{
+			init(db, name, vector_dimension);
+
+			//faiss::indexHNSW
+			
+		}
+		~table() = default;
+	private:
+		std::string m_name;
+		std::shared_ptr<database> m_db;
+		std::size_t m_vector_dimension;
+		fs::path m_faiss_fullpath;
+
+		void init(std::shared_ptr<memory::database>& db, const std::string& name, const size_t vector_dimension)
+		{
 			auto ts = std::make_shared<sqlite::transaction>(db->get(), sqlite::transaction_level::EXCLUSIVE);
 			static sqlite::stmt where_table{ ts, R"(
 				SELECT COUNT(*)
@@ -87,11 +101,5 @@ namespace memory
 			ts->commit();
 			where_table.reset();
 		}
-		~table() = default;
-	private:
-		std::string m_name;
-		std::shared_ptr<database> m_db;
-		std::size_t m_vector_dimension;
-		fs::path m_faiss_fullpath;
 	};
 }

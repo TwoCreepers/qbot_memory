@@ -306,9 +306,9 @@ namespace memory::sqlite
 		{
 			open(db, sql, prepFlags);
 		}
-		stmt(std::shared_ptr<transaction> ta, std::string_view sql, unsigned int prepFlags = NULL)
+		stmt(transaction ta, std::string_view sql, unsigned int prepFlags = NULL)
 		{
-			open(ta->get(), sql, prepFlags);
+			open(ta.get(), sql, prepFlags);
 		}
 		~stmt()
 		{

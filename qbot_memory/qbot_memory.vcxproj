@@ -135,6 +135,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="exception.hpp" />
+    <ClInclude Include="faiss.hpp" />
     <ClInclude Include="memory.h" />
     <ClInclude Include="sqlite.hpp" />
     <ClInclude Include="thread_pool.hpp" />
