@@ -56,7 +56,8 @@ namespace memory::sqlite
 			{
 				if (sqlite3_close(m_db) != SQLITE_OK)
 				{
-					throw exception::sqlite_runtime_exception(sqlite3_errmsg(m_db));
+					auto errMsg = sqlite3_errmsg(m_db);
+					throw exception::sqlite_runtime_exception(errMsg);
 					return;
 				}
 				m_db = nullptr;
@@ -117,6 +118,7 @@ namespace memory::sqlite
 	class stmt_buffer
 	{
 	public:
+		stmt_buffer() = default;
 		stmt_buffer(sqlite3_stmt* stmt, int i) :m_column_type{ static_cast<SQLite_Ty>(sqlite3_column_type(stmt, i)) }, m_any{}
 		{
 			switch (m_column_type)
@@ -302,11 +304,11 @@ namespace memory::sqlite
 	class stmt
 	{
 	public:
-		stmt(std::shared_ptr<database> db, std::string_view sql, unsigned int prepFlags = NULL)
+		stmt(std::shared_ptr<database> db, std::string_view sql, unsigned int prepFlags = SQLITE_PREPARE_NORMALIZE)
 		{
 			open(db, sql, prepFlags);
 		}
-		stmt(transaction ta, std::string_view sql, unsigned int prepFlags = NULL)
+		stmt(transaction& ta, std::string_view sql, unsigned int prepFlags = SQLITE_PREPARE_NORMALIZE)
 		{
 			open(ta.get(), sql, prepFlags);
 		}
@@ -327,7 +329,7 @@ namespace memory::sqlite
 			_That.m_stmt = nullptr;
 			return *this;
 		}
-		void open(std::shared_ptr<database> db, std::string_view sql, unsigned int prepFlags = NULL)
+		void open(std::shared_ptr<database> db, std::string_view sql, unsigned int prepFlags = SQLITE_PREPARE_NORMALIZE)
 		{
 			auto res = sqlite3_prepare_v3(db->get(), sql.data(), static_cast<int>(sql.size()), prepFlags, &m_stmt, nullptr);
 			if (res != SQLITE_OK)
@@ -397,6 +399,11 @@ namespace memory::sqlite
 		int64_t get_column_int64(int index)
 		{
 			return sqlite3_column_int64(m_stmt, index);
+		}
+
+		std::uint64_t get_column_uint64(int index)
+		{
+			return static_cast<std::uint64_t>(sqlite3_column_int64(m_stmt, index));
 		}
 
 		double get_column_double(int index)

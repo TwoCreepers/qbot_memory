@@ -15,8 +15,11 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="memory.cpp">
+    <ClCompile Include="main.cpp">
       <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="memory.hpp">
+      <Filter>头文件</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -27,9 +30,6 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="thread_pool.hpp">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="memory.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="faiss.hpp">
