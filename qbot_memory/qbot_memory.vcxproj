@@ -71,12 +71,16 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>C:\Users\temporary\AppData\Local\Programs\Python\Python312\Include;C:\Users\temporary\AppData\Roaming\uv\tools\pybind11\Lib\site-packages\pybind11\include;$(IncludePath)</IncludePath>
-    <LibraryPath>C:\Users\temporary\AppData\Local\Programs\Python\Python312\libs;$(LibraryPath)</LibraryPath>
+    <IncludePath>$(PyBind11);$(IncludePath)</IncludePath>
+    <LibraryPath>$(PythonLib);$(LibraryPath)</LibraryPath>
+    <AllProjectIncludesArePublic>true</AllProjectIncludesArePublic>
+    <PublicIncludeDirectories>./;$(PublicIncludeDirectories)</PublicIncludeDirectories>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>C:\Users\temporary\AppData\Local\Programs\Python\Python312\Include;C:\Users\temporary\AppData\Roaming\uv\tools\pybind11\Lib\site-packages\pybind11\include;$(IncludePath)</IncludePath>
-    <LibraryPath>C:\Users\temporary\AppData\Local\Programs\Python\Python312\libs;$(LibraryPath)</LibraryPath>
+    <IncludePath>$(PyBind11);$(IncludePath)</IncludePath>
+    <LibraryPath>$(PythonLib);$(LibraryPath)</LibraryPath>
+    <AllProjectIncludesArePublic>true</AllProjectIncludesArePublic>
+    <PublicIncludeDirectories>./;$(PublicIncludeDirectories)</PublicIncludeDirectories>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -118,7 +122,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>python312.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -137,7 +141,7 @@
       <EnableCOMDATFolding Condition="'$(UseDynamicDebugging)' != 'true'">true</EnableCOMDATFolding>
       <OptimizeReferences Condition="'$(UseDynamicDebugging)' != 'true'">true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>python312.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>

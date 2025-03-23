@@ -431,9 +431,9 @@ namespace memory::sqlite
 			return sqlite3_column_double(m_stmt, index);
 		}
 
-		const unsigned char* get_column_str(int index)
+		const char* get_column_str(int index)
 		{
-			return sqlite3_column_text(m_stmt, index);
+			return (const char*)(sqlite3_column_text(m_stmt, index));
 		}
 
 		int step(stmt_step_ret_t& in)

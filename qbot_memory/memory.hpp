@@ -44,7 +44,6 @@ namespace memory
 		std::string sender;
 		std::string sender_uuid;
 		std::string message;
-		double bm25;
 	};
 
 	struct select_vector_data
@@ -208,9 +207,9 @@ namespace memory
 			m_select_main_data_id.step();
 			return { m_select_main_data_id.get_column_uint64(0),
 				m_select_main_data_id.get_column_uint64(1),
-				(const char*)m_select_main_data_id.get_column_str(2),
-				(const char*)m_select_main_data_id.get_column_str(3) ,
-				(const char*)m_select_main_data_id.get_column_str(4) };
+				m_select_main_data_id.get_column_str(2),
+				m_select_main_data_id.get_column_str(3) ,
+				m_select_main_data_id.get_column_str(4) };
 		}
 		std::vector<select_data> search_list_uuid(const std::string& uuid)
 		{
@@ -223,9 +222,9 @@ namespace memory
 			{
 				res.emplace_back(m_select_main_sender_uuid.get_column_uint64(0),
 					m_select_main_sender_uuid.get_column_uint64(1),
-					(const char*)m_select_main_sender_uuid.get_column_str(2),
-					(const char*)m_select_main_sender_uuid.get_column_str(3),
-					(const char*)m_select_main_sender_uuid.get_column_str(4)
+					m_select_main_sender_uuid.get_column_str(2),
+					m_select_main_sender_uuid.get_column_str(3),
+					m_select_main_sender_uuid.get_column_str(4)
 				);
 			}
 
@@ -245,9 +244,9 @@ namespace memory
 			{
 				res.emplace_back(m_select_main_sender_uuid_limit.get_column_uint64(0),
 					m_select_main_sender_uuid_limit.get_column_uint64(1),
-					(const char*)m_select_main_sender_uuid_limit.get_column_str(2),
-					(const char*)m_select_main_sender_uuid_limit.get_column_str(3),
-					(const char*)m_select_main_sender_uuid_limit.get_column_str(4)
+					m_select_main_sender_uuid_limit.get_column_str(2),
+					m_select_main_sender_uuid_limit.get_column_str(3),
+					m_select_main_sender_uuid_limit.get_column_str(4)
 				);
 			}
 
@@ -266,9 +265,9 @@ namespace memory
 			{
 				res.emplace_back(m_select_main_data_time_start.get_column_uint64(0),
 					m_select_main_data_time_start.get_column_uint64(1),
-					(const char*)m_select_main_data_time_start.get_column_str(2),
-					(const char*)m_select_main_data_time_start.get_column_str(3),
-					(const char*)m_select_main_data_time_start.get_column_str(4)
+					m_select_main_data_time_start.get_column_str(2),
+					m_select_main_data_time_start.get_column_str(3),
+					m_select_main_data_time_start.get_column_str(4)
 				);
 			}
 
@@ -287,9 +286,9 @@ namespace memory
 			{
 				res.emplace_back(m_select_main_data_time_end.get_column_uint64(0),
 					m_select_main_data_time_end.get_column_uint64(1),
-					(const char*)m_select_main_data_time_end.get_column_str(2),
-					(const char*)m_select_main_data_time_end.get_column_str(3),
-					(const char*)m_select_main_data_time_end.get_column_str(4)
+					m_select_main_data_time_end.get_column_str(2),
+					m_select_main_data_time_end.get_column_str(3),
+					m_select_main_data_time_end.get_column_str(4)
 				);
 			}
 
@@ -309,9 +308,9 @@ namespace memory
 			{
 				res.emplace_back(m_select_main_data_time_start_end.get_column_uint64(0),
 					m_select_main_data_time_start_end.get_column_uint64(1),
-					(const char*)m_select_main_data_time_start_end.get_column_str(2),
-					(const char*)m_select_main_data_time_start_end.get_column_str(3),
-					(const char*)m_select_main_data_time_start_end.get_column_str(4)
+					m_select_main_data_time_start_end.get_column_str(2),
+					m_select_main_data_time_start_end.get_column_str(3),
+					m_select_main_data_time_start_end.get_column_str(4)
 				);
 			}
 
@@ -335,10 +334,9 @@ namespace memory
 				res.emplace_back(
 					m_select_main_data_id_no_message.get_column_uint64(0),
 					m_select_main_data_id_no_message.get_column_uint64(1),
-					(const char*)m_select_main_data_id_no_message.get_column_str(2),
-					(const char*)m_select_main_data_id_no_message.get_column_str(3),
-					(const char*)m_select_fts_message.get_column_str(1),
-					m_select_fts_message.get_column_double(2)
+					m_select_main_data_id_no_message.get_column_str(2),
+					m_select_main_data_id_no_message.get_column_str(3),
+					m_select_fts_message.get_column_str(1)
 					);
 			}
 
@@ -362,10 +360,9 @@ namespace memory
 				res.emplace_back(
 					m_select_main_data_id_no_message.get_column_uint64(0),
 					m_select_main_data_id_no_message.get_column_uint64(1),
-					(const char*)m_select_main_data_id_no_message.get_column_str(2),
-					(const char*)m_select_main_data_id_no_message.get_column_str(3),
-					(const char*)m_select_fts_message_limit.get_column_str(1),
-					m_select_fts_message_limit.get_column_double(2)
+					m_select_main_data_id_no_message.get_column_str(2),
+					m_select_main_data_id_no_message.get_column_str(3),
+					m_select_fts_message_limit.get_column_str(1)
 				);
 			}
 
@@ -395,9 +392,9 @@ namespace memory
 					res.emplace_back(
 						m_select_main_data_id.get_column_uint64(0),
 						m_select_main_data_id.get_column_uint64(1),
-						(const char*)m_select_main_data_id.get_column_str(2),
-						(const char*)m_select_main_data_id.get_column_str(3),
-						(const char*)m_select_main_data_id.get_column_str(4),
+						m_select_main_data_id.get_column_str(2),
+						m_select_main_data_id.get_column_str(3),
+						m_select_main_data_id.get_column_str(4),
 						D[i]
 					);
 				}
