@@ -21,7 +21,7 @@ namespace memory::py
 		{
 			if (m_func)
 			{
-				pybind11::gil_scoped_acquire lock;
+				//pybind11::gil_scoped_acquire lock;
 				return m_func(std::forward<Args>(args)...);
 			}
 		}

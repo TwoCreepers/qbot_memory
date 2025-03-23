@@ -132,7 +132,7 @@ namespace memory::sqlite
 	class stmt_buffer
 	{
 	public:
-		stmt_buffer() = default;
+		stmt_buffer() : m_any{}, m_column_type{ SQLite_Ty::NULL_ } {}
 		stmt_buffer(sqlite3_stmt* stmt, int i) :m_column_type{ static_cast<SQLite_Ty>(sqlite3_column_type(stmt, i)) }, m_any{}
 		{
 			switch (m_column_type)
