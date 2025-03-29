@@ -319,11 +319,11 @@ namespace memory::sqlite
 	{
 	public:
 		stmt() = default;
-		stmt(std::shared_ptr<database> db, std::string_view sql, unsigned int prepFlags = NULL)
+		stmt(std::shared_ptr<database> db, std::string_view sql, unsigned int prepFlags = NULL): m_db(db)
 		{
 			open(db, sql, prepFlags);
 		}
-		stmt(transaction& ta, std::string_view sql, unsigned int prepFlags = NULL)
+		stmt(transaction& ta, std::string_view sql, unsigned int prepFlags = NULL) : m_db(ta.get())
 		{
 			open(ta.get(), sql, prepFlags);
 		}
@@ -486,6 +486,7 @@ namespace memory::sqlite
 			return m_stmt;
 		}
 	private:
+		std::shared_ptr<database> m_db;
 		sqlite3_stmt* m_stmt;
 	};
 }
