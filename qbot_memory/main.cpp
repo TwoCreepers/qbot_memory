@@ -6,6 +6,7 @@
 #include <memory>
 #include <nlohmann/json.hpp>
 #include <nlohmann/json_fwd.hpp>
+#include <print>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -15,7 +16,7 @@ using json = nlohmann::json;
 std::vector<float> text_to_vec(const std::string& str)
 {
 	json body_json{
-		{"model", "all-minilm:33m"},
+		{"model", "nomic-embed-text"},
 		{"prompt", str}
 	};
 	auto res = cpr::Post(
@@ -44,18 +45,19 @@ std::vector<float> texts_to_vec(const std::vector<std::string>& vec)
 
 int main()
 {
-	auto db = std::make_shared<memory::database>(R"(C:\game\123\test\02\test.db)", R"(C:/game/source/SQLite插件/simple.dll)", R"(C:/game/source/SQLite插件/dict)");
-	{
-		memory::table test1{ db, "test1", 384 };
-	}
-	memory::table test1{ db, "test1", 384 };
+	auto db = std::make_shared<memory::database>(R"(C:\game\123\test\02\__test__.db)", R"(C:/game/source/SQLite插件/simple.dll)", R"(C:/game/source/SQLite插件/dict)");
+	memory::table test1{ db, "test1", 768 };
 	test1.set_vector(text_to_vec);
 	//test1.set_vectors(texts_to_vec);
-	//test1.add(memory::insert_data{1000, "幻日", "幻日", "幻蓝你好！", 1});
-	//test1.add(memory::insert_data{1023, "幻蓝", "幻蓝", "啊！是老爹啊！", 3});
-	//test1.add(memory::insert_data{1000, "幻蓝", "幻蓝", "老爹好！", 18});
-	auto i = test1.search_list_vector_text_limit("你好", 1, 3);
-	auto i2 = test1.search_list_vector_text_limit("老爹", 1, 3);
-	auto i4 = test1.search_list_vector_text_limit("幻蓝", 1, 3);
+	test1.add(memory::insert_data{1000, "幻日", "幻日", "幻蓝你好！", 1});
+	test1.add(memory::insert_data{1023, "幻蓝", "幻蓝", "啊！是老爹啊！", 3});
+	test1.add(memory::insert_data{1000, "幻蓝", "幻蓝", "老爹好！", 18});
+	auto i = test1.search_list_vector_text("你好", 2);
+	std::println("sender_uuid:{} msg:{} distance:{}", i[0].sender_uuid, i[0].message, i[0].distance);
+	auto i2 = test1.search_list_vector_text("老爹", 1);
+	std::println("sender_uuid:{} msg:{} distance:{}", i2[0].sender_uuid, i2[0].message, i2[0].distance);
+	auto i4 = test1.search_list_vector_text("幻蓝", 1);
+	std::println("sender_uuid:{} msg:{} distance:{}", i4[0].sender_uuid, i4[0].message, i2[0].distance);
 	auto i3 = test1.search_list_fts("幻蓝");
+	std::println("sender_uuid:{} msg:{}", i3[0].sender_uuid, i3[0].message);
 }
