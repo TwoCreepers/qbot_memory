@@ -1,7 +1,7 @@
 #pragma once
 
 #include <functional>
-#if ENABLE_GET_GIL_BEFORE_CALL
+#ifdef ENABLE_GET_GIL_BEFORE_CALL
 #include <pybind11/gil.h>
 #endif
 
@@ -23,7 +23,7 @@ namespace memory::py
 		{
 			if (m_func)
 			{
-#if ENABLE_GET_GIL_BEFORE_CALL
+#ifdef ENABLE_GET_GIL_BEFORE_CALL
 				pybind11::gil_scoped_acquire lock;
 #endif
 				return m_func(std::forward<Args>(args)...);

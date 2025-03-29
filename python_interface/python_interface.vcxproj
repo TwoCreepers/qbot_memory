@@ -87,6 +87,9 @@
     <IncludePath>$(PyBind11);$(IncludePath)</IncludePath>
     <LibraryPath>$(PythonLib);$(LibraryPath)</LibraryPath>
   </PropertyGroup>
+  <PropertyGroup Label="Vcpkg" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <VcpkgUseStatic>true</VcpkgUseStatic>
+  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
@@ -129,7 +132,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <PostBuildEvent>
-      <Command>copy $(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName).dll $(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName).pyd</Command>
+      <Command>copy $(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName).dll $(SolutionDir)$(Platform)\$(Configuration)\qbot_memory.pyd</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -142,6 +145,7 @@
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpplatest</LanguageStandard>
       <LanguageStandard_C>stdclatest</LanguageStandard_C>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -150,7 +154,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <PostBuildEvent>
-      <Command>copy $(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName).dll $(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName).pyd</Command>
+      <Command>copy $(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName).dll $(SolutionDir)$(Platform)\$(Configuration)\qbot_memory.pyd</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

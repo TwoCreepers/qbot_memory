@@ -1,8 +1,13 @@
-#include <memory.hpp>
-
 #define ENABLE_GET_GIL_BEFORE_CALL
+#include <memory.hpp>
 #include <pybind11/pybind11.h>
 namespace py = pybind11;
+#include <memory>
+#include <string>
+#include <pybind11/cast.h>
+#include <pybind11/detail/common.h>
+#include <pybind11/functional.h>
+#include <pybind11/stl.h>
 namespace me = memory;
 PYBIND11_MODULE(qbot_memory, m)
 {
@@ -39,7 +44,6 @@ PYBIND11_MODULE(qbot_memory, m)
         .def_readwrite("message", &me::select_vector_data::message)
         .def_readwrite("distance", &me::select_vector_data::distance)
         ;
-
     
     py::class_<me::database, std::shared_ptr<me::database>>(m, "database")
         .def(py::init<const std::string&, const std::string&, const std::string&>(),
@@ -48,7 +52,9 @@ PYBIND11_MODULE(qbot_memory, m)
         ;
     py::class_<me::table>(m, "table")
         .def(py::init<std::shared_ptr<me::database>, const std::string&, const int, const int>(),
-            py::arg("db"), py::arg("name"), py::arg("vector_dimension"), py::arg("HNWS_max_connect") = 32)
+            py::arg("db"), py::arg("name"), py::arg("vector_dimension"), py::arg("HNWS_max_connect") = 32,
+            py::keep_alive<1, 2>()
+        )
         .def("set_vector", &me::table::set_vector)
         .def("set_vectors", &me::table::set_vectors)
         .def("add", &me::table::add)

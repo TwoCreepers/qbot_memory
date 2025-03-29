@@ -81,7 +81,6 @@ namespace memory
 				)");
 		}
 		~database() = default;
-		database(database&&) = delete;
 
 		fs::path db_file_path()
 		{
