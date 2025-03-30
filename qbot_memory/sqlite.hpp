@@ -605,7 +605,8 @@ namespace memory::sqlite
 			case SQLITE_DONE:
 				break;
 			default:
-				throw exception::stmt_call_error(std::format("执行预编译SQL语句失败: ", m_db->errmsg()));
+				const auto* errmsg = m_db->errmsg();
+				throw exception::stmt_call_error(std::format("执行预编译SQL语句失败: {}", errmsg));
 				break;
 			}
 			return res;
@@ -621,7 +622,8 @@ namespace memory::sqlite
 			case SQLITE_DONE:
 				break;
 			default:
-				throw exception::stmt_call_error(std::format("执行预编译SQL语句失败: ", m_db->errmsg()));
+				const auto* errmsg = m_db->errmsg();
+				throw exception::stmt_call_error(std::format("执行预编译SQL语句失败: {}", errmsg));
 				break;
 			}
 			return res;
