@@ -20,6 +20,28 @@ namespace fs = std::filesystem;
 
 namespace memory
 {
+	inline void check_limit(const faiss::idx_t limit)
+	{
+		if (limit <= 0)
+		{
+			throw exception::invalid_argument(std::format("limit不能小于0, 但实际值为: {}", limit));
+		}
+	}
+	inline void ckeck_k(const faiss::idx_t k)
+	{
+		if (k <= 0)
+		{
+			throw exception::invalid_argument(std::format("k不能小于0, 但实际值为: {}", k));
+		}
+	}
+	inline void ckeck_id(const std::size_t id)
+	{
+		if (id <= 1)
+		{
+			throw exception::invalid_argument(std::format("id不能小于0, 但实际值为: {}", id));
+		}
+	}
+
 	struct insert_data
 	{
 		std::size_t time;
@@ -838,26 +860,4 @@ namespace memory
 			m_del_fts_id = sqlite::stmt(m_db, std::format(R"(DELETE FROM {}_fts WHERE rowid = ?;)", m_name), SQLITE_PREPARE_PERSISTENT);
 		}
 	};
-
-	void check_limit(const faiss::idx_t limit)
-	{
-		if (limit <= 0)
-		{
-			throw exception::invalid_argument(std::format("limit不能小于0, 但实际值为: {}", limit));
-		}
-	}
-	void ckeck_k(const faiss::idx_t k)
-	{
-		if (k <= 0)
-		{
-			throw exception::invalid_argument(std::format("k不能小于0, 但实际值为: {}", k));
-		}
-	}
-	void ckeck_id(const std::size_t id)
-	{
-		if (id <= 1)
-		{
-			throw exception::invalid_argument(std::format("id不能小于0, 但实际值为: {}", id));
-		}
-	}
 }

@@ -4,6 +4,8 @@
 #include <any>
 #include <atomic>
 #include <cstdint>
+#include <format>
+#include <format>
 #include <functional>
 #include <memory>
 #include <sqlite3.h>
@@ -44,9 +46,6 @@ namespace memory::sqlite
 
 	using exec_callback_func_ptr = int(void*, int, char**, char**);
 	using exec_callback_func = std::function<exec_callback_func_ptr>;
-
-	using stmt_step_ret_t = std::unordered_map<std::string, stmt_buffer>;
-	using stmt_steps_ret_t_v1 = std::unordered_map<std::string, std::vector<stmt_buffer>>;
 
 	class database
 	{
@@ -291,6 +290,9 @@ namespace memory::sqlite
 		SQLite_Ty m_column_type;
 	};
 
+	using stmt_step_ret_t = std::unordered_map<std::string, stmt_buffer>;
+	using stmt_steps_ret_t_v1 = std::unordered_map<std::string, std::vector<stmt_buffer>>;
+
 	class transaction
 	{
 	public:
@@ -403,12 +405,14 @@ namespace memory::sqlite
 		stmt(const stmt& _That) = delete;
 		stmt(stmt&& _That) noexcept
 		{
+			this->m_db = std::move(_That.m_db);
 			this->m_stmt = std::move(_That.m_stmt);
 			_That.m_stmt = nullptr;
 		}
 		stmt& operator=(const stmt& _That) = delete;
 		stmt& operator=(stmt&& _That) noexcept
 		{
+			this->m_db = std::move(_That.m_db);
 			this->m_stmt = std::move(_That.m_stmt);
 			_That.m_stmt = nullptr;
 			return *this;
@@ -601,7 +605,7 @@ namespace memory::sqlite
 			case SQLITE_DONE:
 				break;
 			default:
-				throw exception::stmt_call_error(std::format("执行step时: ", m_db->errmsg()));
+				throw exception::stmt_call_error(std::format("执行预编译SQL语句失败: ", m_db->errmsg()));
 				break;
 			}
 			return res;
@@ -617,7 +621,7 @@ namespace memory::sqlite
 			case SQLITE_DONE:
 				break;
 			default:
-				throw exception::stmt_call_error(std::format("执行step时: ", m_db->errmsg()));
+				throw exception::stmt_call_error(std::format("执行预编译SQL语句失败: ", m_db->errmsg()));
 				break;
 			}
 			return res;
