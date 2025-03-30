@@ -135,24 +135,24 @@ namespace memory::exception
 	class stmt_call_error : public bad_stmt
 	{
 	public:
-		stmt_call_error(const char* msg = "语句调用错误", const char* name = "语句调用错误") : bad_stmt(msg, name) {}
-		stmt_call_error(std::string msg, const char* name = "语句调用错误") : bad_stmt(std::move(msg), name) {}
+		stmt_call_error(const char* msg = "预编译SQL语句调用错误", const char* name = "预编译SQL语句调用错误") : bad_stmt(msg, name) {}
+		stmt_call_error(std::string msg, const char* name = "预编译SQL语句调用错误") : bad_stmt(std::move(msg), name) {}
 		virtual ~stmt_call_error() = default;
 	};
 
 	class stmt_bind_error : public bad_stmt
 	{
 	public:
-		stmt_bind_error(const char* msg = "语句绑定失败", const char* name = "语句绑定失败") : bad_stmt(msg, name) {}
-		stmt_bind_error(std::string msg, const char* name = "语句绑定失败") : bad_stmt(std::move(msg), name) {}
+		stmt_bind_error(const char* msg = "预编译SQL语句绑定失败", const char* name = "预编译SQL语句绑定失败") : bad_stmt(msg, name) {}
+		stmt_bind_error(std::string msg, const char* name = "预编译SQL语句绑定失败") : bad_stmt(std::move(msg), name) {}
 		virtual ~stmt_bind_error() = default;
 	};
 
 	class stmt_reset_error : public bad_stmt
 	{
 	public:
-		stmt_reset_error(const char* msg = "语句重置失败", const char* name = "语句重置失败") : bad_stmt(msg, name) {}
-		stmt_reset_error(std::string msg, const char* name = "语句重置失败") : bad_stmt(std::move(msg), name) {}
+		stmt_reset_error(const char* msg = "预编译SQL语句重置失败", const char* name = "预编译SQL语句重置失败") : bad_stmt(msg, name) {}
+		stmt_reset_error(std::string msg, const char* name = "预编译SQL语句重置失败") : bad_stmt(std::move(msg), name) {}
 		virtual ~stmt_reset_error() = default;
 	};
 
