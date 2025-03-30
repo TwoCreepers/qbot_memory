@@ -1,10 +1,13 @@
 #pragma once
 
 #include <exception>
+#include <functional>
 #include <sstream>
 #include <stacktrace>
+#include <stdexcept>
 #include <string>
 #include <utility>
+
 
 namespace memory::exception
 {
@@ -206,11 +209,11 @@ namespace memory::exception
 		virtual ~sqlite_extension_error() = default;
 	};
 
-	class invalid_argument : public bad_exception
+	class invalid_argument : public bad_exception, public std::invalid_argument
 	{
 	public:
-		invalid_argument(const char* msg = "无效的参数", const char* name = "无效参数异常") : bad_exception(msg, name) {}
-		invalid_argument(std::string msg, const char* name = "无效参数异常") : bad_exception(std::move(msg), name) {}
+		invalid_argument(const char* msg = "无效的参数", const char* name = "无效参数异常") : bad_exception(msg, name), std::invalid_argument(msg) {}
+		invalid_argument(std::string msg, const char* name = "无效参数异常") : bad_exception(msg, name), std::invalid_argument(std::move(msg)) {}
 		virtual ~invalid_argument() = default;
 	};
 
@@ -230,7 +233,7 @@ namespace memory::exception
 		virtual ~out_of_range() = default;
 	};
 
-	class bad_alloc : public bad_exception
+	class bad_alloc : public bad_exception, public std::bad_alloc
 	{
 	public:
 		bad_alloc(const char* msg = "内存分配失败", const char* name = "内存分配异常") : bad_exception(msg, name) {}

@@ -1,4 +1,5 @@
 #include "memory.hpp"
+#include "new.hpp"
 
 #include <cpr/api.h>
 #include <cpr/body.h>
