@@ -52,12 +52,16 @@ int main()
 	test1.add(memory::insert_data{1000, "幻日", "幻日", "幻蓝你好！", 1});
 	test1.add(memory::insert_data{1023, "幻蓝", "幻蓝", "啊！是老爹啊！", 3});
 	test1.add(memory::insert_data{1000, "幻蓝", "幻蓝", "老爹好！", 18});
-	auto i = test1.search_list_vector_text("问候:你好", 2);
+	auto i = test1.search_list_vector_text("你好", 2);
 	std::println("sender_uuid:{} msg:{} distance:{}", i[0].sender_uuid, i[0].message, i[0].distance);
-	auto i2 = test1.search_list_vector_text("称呼:老爹", 1);
-	std::println("sender_uuid:{} msg:{} distance:{}", i2[0].sender_uuid, i2[0].message, i2[0].distance);
-	auto i4 = test1.search_list_vector_text("人名:幻蓝", 1);
-	std::println("sender_uuid:{} msg:{} distance:{}", i4[0].sender_uuid, i4[0].message, i2[0].distance);
+	auto i2 = test1.search_list_vector_text("老爹", 1);
+	if (!i2.empty())
+		std::println("sender_uuid:{} msg:{} distance:{}", i2[0].sender_uuid, i2[0].message, i2[0].distance);
+	auto i4 = test1.search_list_vector_text("幻蓝", 1);
+	if (!i4.empty())
+		std::println("sender_uuid:{} msg:{} distance:{}", i4[0].sender_uuid, i4[0].message, i2[0].distance);
 	auto i3 = test1.search_list_fts("幻蓝");
 	std::println("sender_uuid:{} msg:{}", i3[0].sender_uuid, i3[0].message);
+	auto i5 = test1.search_list_highlight_fts("幻蓝", "[", "]");
+	std::println("sender_uuid:{} msg:{}", i5[0].sender_uuid, i5[0].message);
 }

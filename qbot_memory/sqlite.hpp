@@ -27,7 +27,14 @@ namespace memory::sqlite
 		{
 			open(path);
 		}
-		~database() { close(); }
+		~database()
+		{
+			try
+			{
+				close();
+			}
+			catch (const exception::bad_database&) {}
+		}
 		database(const database& _That) = delete;
 		database(database&& _That) noexcept
 		{
@@ -46,7 +53,8 @@ namespace memory::sqlite
 			if (sqlite3_open(path.data(), &m_db) != SQLITE_OK)
 			{
 				close();
-				throw exception::sqlite_runtime_exception(sqlite3_errmsg(m_db));
+				auto errMsg = errmsg();
+				throw exception::bad_database(std::format("数据库连接打开时: {}", errMsg));
 				return;
 			}
 		}
@@ -56,8 +64,8 @@ namespace memory::sqlite
 			{
 				if (sqlite3_close(m_db) != SQLITE_OK)
 				{
-					auto errMsg = sqlite3_errmsg(m_db);
-					throw exception::sqlite_runtime_exception(errMsg);
+					auto errMsg = errmsg();
+					throw exception::bad_database(std::format("数据库连接关闭时: {}", errMsg));
 					return;
 				}
 				m_db = nullptr;
@@ -69,7 +77,7 @@ namespace memory::sqlite
 			int res;
 			if (res = sqlite3_exec(m_db, sql.c_str(), *(callback_func.target<exec_callback_func_ptr>()), user_ptr, &errMsg) != SQLITE_OK)
 			{
-				auto error = exception::sqlite_runtime_exception(errMsg);
+				auto error = exception::sqlite_call_error(errMsg);
 				sqlite3_free(errMsg);
 				throw error;
 			}
@@ -79,7 +87,7 @@ namespace memory::sqlite
 		{
 			if (m_db == nullptr)
 			{
-				throw exception::sqlite_runtime_exception("Database ptr is nullptr");
+				throw exception::bad_database("数据库连接未开启");
 			}
 			return m_db;
 		}
@@ -89,7 +97,7 @@ namespace memory::sqlite
 			int res;
 			if (res = sqlite3_load_extension(m_db, extension_path.c_str(), nullptr, &errMsg) != SQLITE_OK)
 			{
-				auto error = exception::sqlite_runtime_exception(errMsg);
+				auto error = exception::sqlite_extension_error(errMsg);
 				sqlite3_free(errMsg);
 				throw error;
 			}
@@ -99,14 +107,22 @@ namespace memory::sqlite
 			const int res = sqlite3_enable_load_extension(m_db, onoff);
 			if (res != SQLITE_OK)
 			{
-				auto errMsg = sqlite3_errmsg(m_db);
-				auto error = exception::sqlite_runtime_exception(errMsg);
+				auto errMsg = errmsg();
+				auto error = exception::sqlite_extension_error(std::format("启用扩展加载时: {}", errMsg));
 				throw error;
 			}
 		}
 		sqlite_int64 last_insert_rowid()
 		{
 			return sqlite3_last_insert_rowid(m_db);
+		}
+		const char* errmsg()
+		{
+			return sqlite3_errmsg(m_db);
+		}
+		int extended_errcode()
+		{
+			return sqlite3_extended_errcode(m_db);
 		}
 	private:
 		sqlite3* m_db;
@@ -178,7 +194,7 @@ namespace memory::sqlite
 			this->m_any = _That.m_any;
 			this->m_column_type = _That.m_column_type;
 		}
-		stmt_buffer(stmt_buffer&& _That) noexcept 
+		stmt_buffer(stmt_buffer&& _That) noexcept
 		{
 			this->m_any = std::move(_That.m_any);
 			this->m_column_type = std::move(_That.m_column_type);
@@ -189,7 +205,7 @@ namespace memory::sqlite
 			this->m_column_type = _That.m_column_type;
 			return *this;
 		}
-		stmt_buffer& operator=(stmt_buffer&& _That) noexcept 
+		stmt_buffer& operator=(stmt_buffer&& _That) noexcept
 		{
 			this->m_any = std::move(_That.m_any);
 			this->m_column_type = std::move(_That.m_column_type);
@@ -240,13 +256,13 @@ namespace memory::sqlite
 			{
 				if (m_active) { rollback(); }
 			}
-			catch (const exception::sqlite_runtime_exception&) {}
+			catch (const exception::stmt_call_error&) {}
 		}
 		void open(transaction_level level = DEFAULT)
 		{
 			if (m_active)
 			{
-				throw exception::double_transaction_exception();
+				throw exception::bad_transaction("重复开启事务");
 			}
 			const char* sql = nullptr;
 			switch (level)
@@ -259,7 +275,7 @@ namespace memory::sqlite
 			}
 			if (m_db->execute(sql) != SQLITE_OK)
 			{
-				throw exception::sqlite_runtime_exception("Failed to begin transaction");
+				throw exception::bad_transaction("开启事务失败");
 			}
 			m_active = true; // 事务成功启动
 		}
@@ -271,7 +287,7 @@ namespace memory::sqlite
 		{
 			if (!m_active)
 			{
-				throw exception::using_close_transaction_exception();
+				throw exception::bad_transaction("提交失败, 因为事务已关闭");
 			}
 			int rc = m_db->execute("COMMIT;");
 			{
@@ -285,7 +301,7 @@ namespace memory::sqlite
 		{
 			if (!m_active)
 			{
-				throw exception::using_close_transaction_exception();
+				throw exception::bad_transaction("回滚失败, 因为事务已关闭");
 			}
 			int rc = m_db->execute("ROLLBACK;");
 			{
@@ -298,7 +314,7 @@ namespace memory::sqlite
 		{
 			if (!m_active)
 			{
-				throw exception::using_close_transaction_exception();
+				throw exception::bad_transaction("执行失败, 因为事务已关闭");
 			}
 			return m_db->execute(sql, callback_func, user_ptr);
 		}
@@ -306,7 +322,7 @@ namespace memory::sqlite
 		{
 			if (!m_active)
 			{
-				throw exception::using_close_transaction_exception();
+				throw exception::bad_transaction("获取一个已关闭的事务");
 			}
 			return m_db;
 		}
@@ -319,7 +335,7 @@ namespace memory::sqlite
 	{
 	public:
 		stmt() = default;
-		stmt(std::shared_ptr<database> db, std::string_view sql, unsigned int prepFlags = NULL): m_db(db)
+		stmt(std::shared_ptr<database> db, std::string_view sql, unsigned int prepFlags = NULL) : m_db(db)
 		{
 			open(db, sql, prepFlags);
 		}
@@ -329,7 +345,11 @@ namespace memory::sqlite
 		}
 		~stmt()
 		{
-			close();
+			try
+			{
+				close();
+			}
+			catch (const exception::bad_stmt&) {}
 		}
 		stmt(const stmt& _That) = delete;
 		stmt(stmt&& _That) noexcept
@@ -349,66 +369,137 @@ namespace memory::sqlite
 			auto res = sqlite3_prepare_v3(db->get(), sql.data(), static_cast<int>(sql.size()), prepFlags, &m_stmt, nullptr);
 			if (res != SQLITE_OK)
 			{
-				throw exception::sqlite_runtime_exception();
+				throw exception::bad_stmt(std::format("开启预编译SQL语句失败: ", m_db->errmsg()));
 			}
 		}
 		void close()
 		{
 			if (m_stmt != nullptr)
 			{
-				sqlite3_finalize(m_stmt);
+				auto res = sqlite3_finalize(m_stmt);
+				if (res != SQLITE_OK)
+				{
+					throw exception::bad_stmt(std::format("关闭预编译SQL语句失败: ", m_db->errmsg()));
+				}
 				m_stmt = nullptr;
 			}
 		}
-		int reset()
+		void reset()
 		{
-			return sqlite3_reset(m_stmt);
+			int rc = sqlite3_reset(m_stmt);
+			if (rc != SQLITE_OK)
+			{
+				throw exception::stmt_reset_error(
+					std::format("重置语句失败: {}", m_db->errmsg())
+				);
+			}
 		}
+
 		template <class T>
-		int bind(int index, T value)
+		void bind(int index, T value)
 		{
 			static_assert(false, "使用了一个bind函数不支持的类型");
-			return sqlite3_bind_null(m_stmt, index);
+			int rc = sqlite3_bind_null(m_stmt, index);
+			if (rc != SQLITE_OK)
+			{
+				throw exception::stmt_bind_error(
+					std::format("绑定参数失败(不支持的类型): {}", m_db->errmsg())
+				);
+			}
 		}
+
 		template <>
-		int bind<nullptr_t>(int index, nullptr_t value)
+		void bind<nullptr_t>(int index, nullptr_t value)
 		{
-			return sqlite3_bind_null(m_stmt, index);
-		}
-		template<>
-		int bind<int>(int index, int value)
-		{
-			return sqlite3_bind_int(m_stmt, index, value);
-		}
-		template<>
-		int bind<std::int64_t>(int index, const std::int64_t value)
-		{
-			return sqlite3_bind_int64(m_stmt, index, value);
-		}
-		template<>
-		int bind<std::uint64_t>(int index, const std::uint64_t value)
-		{
-			return sqlite3_bind_int64(m_stmt, index, static_cast<std::int64_t>(value));
-		}
-		template<>
-		int bind<double>(int index, const double value)
-		{
-			return sqlite3_bind_double(m_stmt, index, value);
-		}
-		template<>
-		int bind<const char*>(int index, const char* value)
-		{
-			return sqlite3_bind_text(m_stmt, index, value, -1, SQLITE_TRANSIENT);
+			int rc = sqlite3_bind_null(m_stmt, index);
+			if (rc != SQLITE_OK)
+			{
+				throw exception::stmt_bind_error(
+					std::format("绑定null参数失败: {}", m_db->errmsg())
+				);
+			}
 		}
 
-		int bind(int index, std::string_view value, sqlite3_destructor_type flag = SQLITE_TRANSIENT)
+		template<>
+		void bind<int>(int index, int value)
 		{
-			return sqlite3_bind_text(m_stmt, index, value.data(), static_cast<int>(value.size()), flag);
+			int rc = sqlite3_bind_int(m_stmt, index, value);
+			if (rc != SQLITE_OK)
+			{
+				throw exception::stmt_bind_error(
+					std::format("绑定int参数失败: {}", m_db->errmsg())
+				);
+			}
 		}
 
-		int bind(int index, const std::string& value, sqlite3_destructor_type flag = SQLITE_TRANSIENT)
+		template<>
+		void bind<std::int64_t>(int index, const std::int64_t value)
 		{
-			return sqlite3_bind_text(m_stmt, index, value.data(), static_cast<int>(value.size()), flag);
+			int rc = sqlite3_bind_int64(m_stmt, index, value);
+			if (rc != SQLITE_OK)
+			{
+				throw exception::stmt_bind_error(
+					std::format("绑定int64参数失败: {}", m_db->errmsg())
+				);
+			}
+		}
+
+		template<>
+		void bind<std::uint64_t>(int index, const std::uint64_t value)
+		{
+			int rc = sqlite3_bind_int64(m_stmt, index, static_cast<std::int64_t>(value));
+			if (rc != SQLITE_OK)
+			{
+				throw exception::stmt_bind_error(
+					std::format("绑定uint64参数失败: {}", m_db->errmsg())
+				);
+			}
+		}
+
+		template<>
+		void bind<double>(int index, const double value)
+		{
+			int rc = sqlite3_bind_double(m_stmt, index, value);
+			if (rc != SQLITE_OK)
+			{
+				throw exception::stmt_bind_error(
+					std::format("绑定double参数失败: {}", m_db->errmsg())
+				);
+			}
+		}
+
+		template<>
+		void bind<const char*>(int index, const char* value)
+		{
+			int rc = sqlite3_bind_text(m_stmt, index, value, -1, SQLITE_TRANSIENT);
+			if (rc != SQLITE_OK)
+			{
+				throw exception::stmt_bind_error(
+					std::format("绑定const char*参数失败: {}", m_db->errmsg())
+				);
+			}
+		}
+
+		void bind(int index, std::string_view value, sqlite3_destructor_type flag = SQLITE_TRANSIENT)
+		{
+			int rc = sqlite3_bind_text(m_stmt, index, value.data(), static_cast<int>(value.size()), flag);
+			if (rc != SQLITE_OK)
+			{
+				throw exception::stmt_bind_error(
+					std::format("绑定string_view参数失败: {}", m_db->errmsg())
+				);
+			}
+		}
+
+		void bind(int index, const std::string& value, sqlite3_destructor_type flag = SQLITE_TRANSIENT)
+		{
+			int rc = sqlite3_bind_text(m_stmt, index, value.data(), static_cast<int>(value.size()), flag);
+			if (rc != SQLITE_OK)
+			{
+				throw exception::stmt_bind_error(
+					std::format("绑定string参数失败: {}", m_db->errmsg())
+				);
+			}
 		}
 
 		int get_column_int(int index)
@@ -452,14 +543,35 @@ namespace memory::sqlite
 
 		int step(sqlite3_stmt*& in)
 		{
-			int rc = sqlite3_step(m_stmt);
 			in = m_stmt;
-			return rc;
+			const auto res = sqlite3_step(m_stmt);
+			switch (res)
+			{
+			case SQLITE_ROW:
+				break;
+			case SQLITE_DONE:
+				break;
+			default:
+				throw exception::stmt_call_error(std::format("执行step时: ", m_db->errmsg()));
+				break;
+			}
+			return res;
 		}
 
 		int step()
 		{
-			return sqlite3_step(m_stmt);
+			const auto res = sqlite3_step(m_stmt);
+			switch (res)
+			{
+			case SQLITE_ROW:
+				break;
+			case SQLITE_DONE:
+				break;
+			default:
+				throw exception::stmt_call_error(std::format("执行step时: ", m_db->errmsg()));
+				break;
+			}
+			return res;
 		}
 
 		int steps(stmt_steps_ret_t_v1& in)
@@ -481,7 +593,7 @@ namespace memory::sqlite
 		{
 			if (m_stmt == nullptr)
 			{
-				throw exception::sqlite_runtime_exception("Stmt ptr is nullptr");
+				throw exception::bad_stmt("获取一个已关闭的预编译SQL语句");
 			}
 			return m_stmt;
 		}

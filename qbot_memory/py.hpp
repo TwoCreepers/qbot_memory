@@ -1,5 +1,6 @@
 #pragma once
 
+#include "exception.hpp"
 #include <functional>
 #ifdef ENABLE_GET_GIL_BEFORE_CALL
 #include <pybind11/gil.h>
@@ -27,6 +28,10 @@ namespace memory::py
 				pybind11::gil_scoped_acquire lock;
 #endif
 				return m_func(std::forward<Args>(args)...);
+			}
+			else
+			{
+				throw exception::bad_function_call("调用空的函数");
 			}
 		}
 	private:
