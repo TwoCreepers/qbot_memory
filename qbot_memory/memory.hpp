@@ -192,7 +192,7 @@ namespace memory
 				m_select_main_data_id.get_column_str(3) ,
 				m_select_main_data_id.get_column_str(4) };
 		}
-		std::vector<select_data> search_list_uuid(const std::string& uuid)
+		std::vector<select_data> search_list_uuid(std::string_view uuid)
 		{
 			sqlite::transaction ts(m_db);
 
@@ -213,7 +213,7 @@ namespace memory
 
 			return res;
 		}
-		std::vector<select_data> search_list_uuid_limit(const std::string& uuid, const std::size_t limit)
+		std::vector<select_data> search_list_uuid_limit(std::string_view uuid, const std::size_t limit)
 		{
 			sqlite::transaction ts(m_db);
 
@@ -300,7 +300,7 @@ namespace memory
 			return res;
 		}
 
-		std::vector<select_fts_data> search_list_fts(const std::string& fts)
+		std::vector<select_fts_data> search_list_fts(std::string_view fts)
 		{
 			sqlite::transaction ts(m_db);
 
@@ -325,7 +325,7 @@ namespace memory
 
 			return res;
 		}
-		std::vector<select_fts_data> search_list_fts_limit(const std::string& fts, const std::size_t limit)
+		std::vector<select_fts_data> search_list_fts_limit(std::string_view fts, const std::size_t limit)
 		{
 			sqlite::transaction ts(m_db);
 
@@ -352,7 +352,63 @@ namespace memory
 			return res;
 		}
 
-		std::vector<select_vector_data> search_list_vector_text(const std::string& text, const faiss::idx_t k)
+		std::vector<select_fts_data> search_list_highlight_fts(std::string_view fts, std::string_view start, std::string_view end)
+		{
+			sqlite::transaction ts(m_db);
+
+			std::vector<select_fts_data> res;
+			m_select_fts_highlight_message.reset();
+			m_select_fts_highlight_message.bind(1, fts, SQLITE_STATIC);
+			m_select_fts_highlight_message.bind(2, start, SQLITE_STATIC);
+			m_select_fts_highlight_message.bind(3, end, SQLITE_STATIC);
+			while (m_select_fts_highlight_message.step() == SQLITE_ROW)
+			{
+				m_select_main_data_id_no_message.reset();
+				m_select_main_data_id_no_message.bind(1, m_select_fts_highlight_message.get_column_uint64(0));
+				m_select_main_data_id_no_message.step();
+				res.emplace_back(
+					m_select_main_data_id_no_message.get_column_uint64(0),
+					m_select_main_data_id_no_message.get_column_uint64(1),
+					m_select_main_data_id_no_message.get_column_str(2),
+					m_select_main_data_id_no_message.get_column_str(3),
+					m_select_fts_highlight_message.get_column_str(1)
+				);
+			}
+
+			ts.commit();
+
+			return res;
+		}
+		std::vector<select_fts_data> search_list_highlight_fts_limit(std::string_view fts, std::string_view start, std::string_view end, const std::size_t limit)
+		{
+			sqlite::transaction ts(m_db);
+
+			std::vector<select_fts_data> res;
+			m_select_fts_highlight_message_limit.reset();
+			m_select_fts_highlight_message_limit.bind(1, fts, SQLITE_STATIC);
+			m_select_fts_highlight_message_limit.bind(2, start, SQLITE_STATIC);
+			m_select_fts_highlight_message_limit.bind(3, end, SQLITE_STATIC);
+			m_select_fts_highlight_message_limit.bind(4, limit);
+			while (m_select_fts_highlight_message_limit.step() == SQLITE_ROW)
+			{
+				m_select_main_data_id_no_message.reset();
+				m_select_main_data_id_no_message.bind(1, m_select_fts_highlight_message_limit.get_column_uint64(0));
+				m_select_main_data_id_no_message.step();
+				res.emplace_back(
+					m_select_main_data_id_no_message.get_column_uint64(0),
+					m_select_main_data_id_no_message.get_column_uint64(1),
+					m_select_main_data_id_no_message.get_column_str(2),
+					m_select_main_data_id_no_message.get_column_str(3),
+					m_select_fts_highlight_message_limit.get_column_str(1)
+				);
+			}
+
+			ts.commit();
+
+			return res;
+		}
+
+		std::vector<select_vector_data> search_list_vector_text(std::string_view text, const faiss::idx_t k)
 		{
 			constexpr faiss::idx_t limit = 1;
 			sqlite::transaction ts(m_db);
@@ -430,6 +486,7 @@ namespace memory
 
 			return res;
 		}
+
 	private:
 		std::string m_name;
 		std::shared_ptr<sqlite::database> m_db;
