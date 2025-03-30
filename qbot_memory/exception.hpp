@@ -11,18 +11,27 @@ namespace memory::exception
 	class exception : public std::exception
 	{
 	public:
-		exception(const char* msg = "未知标准异常 请注意! 该异常不会抛出! 如果你收到这个异常 这是意外情况", const char* name = "标准异常")
+		// 帧过滤函数的类型定义
+		using frame_filter_func = std::function<bool(const std::stacktrace_entry&)>;
+
+		exception(const char* msg = "未知标准异常 请注意! 该异常不会抛出! 如果你收到这个异常 这是意外情况",
+			const char* name = "标准异常",
+			frame_filter_func filter = default_frame_filter)
 			: m_message(msg),
 			m_name(name),
-			m_stacktrace(std::stacktrace::current())
+			m_stacktrace(std::stacktrace::current()),
+			m_frame_filter(std::move(filter))
 		{
 			format_what();
 		}
 
-		exception(std::string msg, const char* name = "标准异常")
+		exception(std::string msg,
+			const char* name = "标准异常",
+			frame_filter_func filter = default_frame_filter)
 			: m_message(std::move(msg)),
 			m_name(name),
-			m_stacktrace(std::stacktrace::current())
+			m_stacktrace(std::stacktrace::current()),
+			m_frame_filter(std::move(filter))
 		{
 			format_what();
 		}
@@ -33,6 +42,17 @@ namespace memory::exception
 		virtual std::string msg() const noexcept { return m_message; }
 		virtual std::stacktrace stacktrace() const noexcept { return m_stacktrace; }
 		virtual const char* what() const noexcept override { return m_what_str.c_str(); }
+
+		// 默认帧过滤器
+		static bool default_frame_filter(const std::stacktrace_entry& frame)
+		{
+			std::string file = frame.source_file();
+			std::string func = frame.description();
+
+			// 跳过 exception.hpp 并且 memory::exception 命名空间的帧
+			return !(file.find("exception.hpp") != std::string::npos &&
+				func.find("memory::exception::") != std::string::npos);
+		}
 
 	protected:
 		void format_what()
@@ -79,14 +99,7 @@ namespace memory::exception
 		{
 			for (size_t i = 0; i < trace.size(); ++i)
 			{
-				const auto& frame = trace[i];
-				std::string file = frame.source_file();
-				std::string func = frame.description();
-
-				// 跳过 exception.hpp 并且 memory::exception 命名空间的帧
-				// 所有继承memory::exception::exception异常的异常都在这里
-				if (file.find("exception.hpp") == std::string::npos &&
-					func.find("memory::exception::") == std::string::npos)
+				if (m_frame_filter(trace[i]))
 				{
 					return i;
 				}
@@ -98,6 +111,7 @@ namespace memory::exception
 		std::string m_message;
 		std::stacktrace m_stacktrace;
 		std::string m_what_str;
+		frame_filter_func m_frame_filter;
 	};
 
 	class runtime_error : public exception
