@@ -50,6 +50,7 @@ namespace memory::exception
 			std::string func = frame.description();
 
 			// 跳过 exception.hpp 并且 memory::exception 命名空间的帧
+			// 默认 所有具有栈追踪的 异常都在这里
 			return !(file.find("exception.hpp") != std::string::npos &&
 				func.find("memory::exception::") != std::string::npos);
 		}
