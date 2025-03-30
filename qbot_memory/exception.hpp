@@ -60,8 +60,7 @@ namespace memory::exception
         {
             if (m_stacktrace.empty()) return "未知位置";
 
-            // 跳过第一帧（是构造函数本身）
-            const size_t frame_to_show = m_stacktrace.size() > 1 ? 1 : 0;
+            const size_t frame_to_show = find_first_non_exception_frame(m_stacktrace);
             const auto& frame = m_stacktrace[frame_to_show];
 
             std::ostringstream oss;
@@ -71,6 +70,25 @@ namespace memory::exception
                 oss << " (" << frame.source_file() << ":" << frame.source_line() << ")";
             }
             return oss.str();
+        }
+
+        size_t find_first_non_exception_frame(const std::stacktrace& trace) const
+        {
+            for (size_t i = 0; i < trace.size(); ++i)
+            {
+                const auto& frame = trace[i];
+                std::string file = frame.source_file();
+                std::string func = frame.description();
+
+                // 跳过 exception.hpp 并且 memory::exception 命名空间的帧
+                // 所有继承memory::exception::exception异常的异常都在这里
+                if (file.find("exception.hpp") == std::string::npos &&
+                    func.find("memory::exception::") == std::string::npos)
+                {
+                    return i;
+                }
+            }
+            return 0;
         }
 
         virtual const char* exception_type() const noexcept { return "标准异常"; }
