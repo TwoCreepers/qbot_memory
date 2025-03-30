@@ -17,8 +17,36 @@
 namespace memory::sqlite
 {
 
+	enum SQLite_Ty
+	{
+		INTEGER = SQLITE_INTEGER,
+		DOUBLE = SQLITE_FLOAT,
+		TEXT = SQLITE_TEXT,
+		BLOB = SQLITE_BLOB,
+		NULL_ = SQLITE_NULL
+	};
+
+	enum transaction_level
+	{
+		DEFAULT,
+		READ_ONLY,
+		DEFERRED,
+		IMMEDIATE,
+		EXCLUSIVE
+	};
+
+	enum synchronous_mode
+	{
+		OFF = 0,
+		NORMAL = 1,
+		FULL = 2
+	};
+
 	using exec_callback_func_ptr = int(void*, int, char**, char**);
 	using exec_callback_func = std::function<exec_callback_func_ptr>;
+
+	using stmt_step_ret_t = std::unordered_map<std::string, stmt_buffer>;
+	using stmt_steps_ret_t_v1 = std::unordered_map<std::string, std::vector<stmt_buffer>>;
 
 	class database
 	{
@@ -124,25 +152,47 @@ namespace memory::sqlite
 		{
 			return sqlite3_extended_errcode(m_db);
 		}
+		void set_synchronous(const synchronous_mode synchronous)
+		{
+			const char* sql = nullptr;
+			switch (synchronous)
+			{
+			case OFF:
+				sql = "PRAGMA synchronous=OFF;";
+				break;
+			case NORMAL:
+				sql = "PRAGMA synchronous=NORMAL;";
+				break;
+			case FULL:
+				sql = "PRAGMA synchronous=FULL;";
+				break;
+			default:
+				sql = nullptr;
+				break;
+			}
+			if (sql == nullptr)
+			{
+				throw exception::invalid_argument("未知的同步模式");
+			}
+			char* errMsg = nullptr;
+			auto res = sqlite3_exec(m_db, sql, nullptr, nullptr, &errMsg);
+			if (res != SQLITE_OK)
+			{
+				throw exception::bad_database(std::format("无法设置同步模式: {} SQL: {}", errMsg, sql));
+			}
+		}
+		void set_wal_autocheckpoint(const std::size_t wal_autocheckpoint)
+		{
+			auto sql = std::format("PRAGMA wal_autocheckpoint={};", wal_autocheckpoint);
+			char* errMsg = nullptr;
+			auto res = sqlite3_exec(m_db, sql.c_str(), nullptr, nullptr, &errMsg);
+			if (res != SQLITE_OK)
+			{
+				throw exception::bad_database(std::format("无法设置同步模式: {} SQL: {}", errMsg, sql));
+			}
+		}
 	private:
 		sqlite3* m_db;
-	};
-
-	enum SQLite_Ty
-	{
-		INTEGER = SQLITE_INTEGER,
-		DOUBLE = SQLITE_FLOAT,
-		TEXT = SQLITE_TEXT,
-		BLOB = SQLITE_BLOB,
-		NULL_ = SQLITE_NULL
-	};
-
-	enum transaction_level
-	{
-		DEFAULT,
-		DEFERRED,
-		IMMEDIATE,
-		EXCLUSIVE
 	};
 
 	class stmt_buffer
@@ -240,8 +290,6 @@ namespace memory::sqlite
 		std::any m_any;
 		SQLite_Ty m_column_type;
 	};
-	using stmt_step_ret_t = std::unordered_map<std::string, stmt_buffer>;
-	using stmt_steps_ret_t_v1 = std::unordered_map<std::string, std::vector<stmt_buffer>>;
 
 	class transaction
 	{
@@ -268,6 +316,7 @@ namespace memory::sqlite
 			switch (level)
 			{
 			case DEFAULT:    sql = "BEGIN;"; break;
+			case READ_ONLY:    sql = "EGIN TRANSACTION READ ONLY;"; break;
 			case DEFERRED:  sql = "BEGIN DEFERRED;"; break;
 			case IMMEDIATE: sql = "BEGIN IMMEDIATE;"; break;
 			case EXCLUSIVE:  sql = "BEGIN EXCLUSIVE;"; break;

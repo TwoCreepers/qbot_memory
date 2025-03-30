@@ -80,6 +80,7 @@ namespace memory
 				faiss_new_id INTEGER NOT NULL
 				);
 				)");
+			m_db->execute("PRAGMA journal_mode=WAL;");
 		}
 		~database() = default;
 
@@ -91,6 +92,15 @@ namespace memory
 		std::shared_ptr<sqlite::database> get() noexcept
 		{
 			return m_db;
+		}
+
+		void set_synchronous(const sqlite::synchronous_mode synchronous)
+		{
+			m_db->set_synchronous(synchronous);
+		}
+		void set_wal_autocheckpoint(const std::size_t wal_autocheckpoint)
+		{
+			m_db->set_wal_autocheckpoint(wal_autocheckpoint);
 		}
 	private:
 		const fs::path m_db_file_path;
@@ -205,7 +215,7 @@ namespace memory
 		}
 		std::vector<select_data> search_list_uuid(std::string_view uuid)
 		{
-			sqlite::transaction ts(m_db);
+			sqlite::transaction ts(m_db, sqlite::READ_ONLY);
 
 			m_select_main_sender_uuid.reset();
 			m_select_main_sender_uuid.bind(1, uuid);
@@ -226,7 +236,7 @@ namespace memory
 		}
 		std::vector<select_data> search_list_uuid_limit(std::string_view uuid, const std::size_t limit)
 		{
-			sqlite::transaction ts(m_db);
+			sqlite::transaction ts(m_db, sqlite::READ_ONLY);
 
 			m_select_main_sender_uuid_limit.reset();
 			m_select_main_sender_uuid_limit.bind(1, uuid);
@@ -248,7 +258,7 @@ namespace memory
 		}
 		std::vector<select_data> search_list_time_start(const std::size_t start)
 		{
-			sqlite::transaction ts(m_db);
+			sqlite::transaction ts(m_db, sqlite::READ_ONLY);
 
 			m_select_main_data_time_start.reset();
 			m_select_main_data_time_start.bind(1, start);
@@ -269,7 +279,7 @@ namespace memory
 		}
 		std::vector<select_data> search_list_time_end(const std::size_t end)
 		{
-			sqlite::transaction ts(m_db);
+			sqlite::transaction ts(m_db, sqlite::READ_ONLY);
 
 			m_select_main_data_time_end.reset();
 			m_select_main_data_time_end.bind(1, end);
@@ -290,7 +300,7 @@ namespace memory
 		}
 		std::vector<select_data> search_list_time_start_end(const std::size_t start, const std::size_t end)
 		{
-			sqlite::transaction ts(m_db);
+			sqlite::transaction ts(m_db, sqlite::READ_ONLY);
 
 			m_select_main_data_time_start_end.reset();
 			m_select_main_data_time_start_end.bind(1, start);
@@ -313,7 +323,7 @@ namespace memory
 
 		std::vector<select_fts_data> search_list_fts(std::string_view fts)
 		{
-			sqlite::transaction ts(m_db);
+			sqlite::transaction ts(m_db, sqlite::READ_ONLY);
 
 			std::vector<select_fts_data> res;
 			m_select_fts_message.reset();
@@ -338,7 +348,7 @@ namespace memory
 		}
 		std::vector<select_fts_data> search_list_fts_limit(std::string_view fts, const std::size_t limit)
 		{
-			sqlite::transaction ts(m_db);
+			sqlite::transaction ts(m_db, sqlite::READ_ONLY);
 
 			std::vector<select_fts_data> res;
 			m_select_fts_message_limit.reset();
@@ -365,7 +375,7 @@ namespace memory
 
 		std::vector<select_fts_data> search_list_highlight_fts(std::string_view fts, std::string_view start, std::string_view end)
 		{
-			sqlite::transaction ts(m_db);
+			sqlite::transaction ts(m_db, sqlite::READ_ONLY);
 
 			std::vector<select_fts_data> res;
 			m_select_fts_highlight_message.reset();
@@ -392,7 +402,7 @@ namespace memory
 		}
 		std::vector<select_fts_data> search_list_highlight_fts_limit(std::string_view fts, std::string_view start, std::string_view end, const std::size_t limit)
 		{
-			sqlite::transaction ts(m_db);
+			sqlite::transaction ts(m_db, sqlite::READ_ONLY);
 
 			std::vector<select_fts_data> res;
 			m_select_fts_highlight_message_limit.reset();
@@ -424,7 +434,7 @@ namespace memory
 			ckeck_k(k);
 
 			constexpr faiss::idx_t limit = 1;
-			sqlite::transaction ts(m_db);
+			sqlite::transaction ts(m_db, sqlite::READ_ONLY);
 
 			auto vector = m_generate_vector_callback(message.data());
 			std::vector<faiss::idx_t> indices(k * limit); // 索引结果
@@ -466,7 +476,7 @@ namespace memory
 			check_limit(limit);
 			ckeck_k(k);
 
-			sqlite::transaction ts(m_db);
+			sqlite::transaction ts(m_db, sqlite::READ_ONLY);
 
 			auto vector = string_generate_vectors(message);
 			std::vector<faiss::idx_t> indices(k * limit); // 索引结果
@@ -510,7 +520,7 @@ namespace memory
 			std::mt19937 generator(rd());
 			std::uniform_real_distribution<double> distribution(0.0, 1.0);
 
-			sqlite::transaction ts(m_db);
+			sqlite::transaction ts(m_db, sqlite::IMMEDIATE);
 
 			m_select_main_id_forget_probability.reset();
 
@@ -574,7 +584,7 @@ namespace memory
 		void rebuild_faiss_index()
 		{
 			std::vector<std::size_t> ids;
-			sqlite::transaction ts(m_db);
+			sqlite::transaction ts(m_db, sqlite::IMMEDIATE);
 
 			m_select_main_count.reset();
 			m_select_main_count.step();
@@ -607,7 +617,7 @@ namespace memory
 		}
 		void full_rebuild_faiss_index()
 		{
-			sqlite::transaction ts(m_db);
+			sqlite::transaction ts(m_db, sqlite::IMMEDIATE);
 
 			m_select_main_count.reset();
 			auto faiss_index_size = m_select_main_count.get_column_uint64(0);
