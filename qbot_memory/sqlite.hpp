@@ -104,7 +104,7 @@ namespace memory::sqlite
 			int res;
 			if (res = sqlite3_exec(m_db, sql.c_str(), *(callback_func.target<exec_callback_func_ptr>()), user_ptr, &errMsg) != SQLITE_OK)
 			{
-				auto error = exception::sqlite_call_error(errMsg);
+				auto error = exception::sqlite_call_error(std::format("执行SQL语句失败: {}\nSQL: {}", errMsg, sql));
 				sqlite3_free(errMsg);
 				throw error;
 			}
@@ -143,11 +143,11 @@ namespace memory::sqlite
 		{
 			return sqlite3_last_insert_rowid(m_db);
 		}
-		const char* errmsg()
+		const char* errmsg() const
 		{
 			return sqlite3_errmsg(m_db);
 		}
-		int extended_errcode()
+		int extended_errcode() const
 		{
 			return sqlite3_extended_errcode(m_db);
 		}
@@ -605,8 +605,7 @@ namespace memory::sqlite
 			case SQLITE_DONE:
 				break;
 			default:
-				const auto* errmsg = m_db->errmsg();
-				throw exception::stmt_call_error(std::format("执行预编译SQL语句失败: {}", errmsg));
+				throw build_error();
 				break;
 			}
 			return res;
@@ -622,8 +621,7 @@ namespace memory::sqlite
 			case SQLITE_DONE:
 				break;
 			default:
-				const auto* errmsg = m_db->errmsg();
-				throw exception::stmt_call_error(std::format("执行预编译SQL语句失败: {}", errmsg));
+				throw build_error();
 				break;
 			}
 			return res;
@@ -652,8 +650,28 @@ namespace memory::sqlite
 			}
 			return m_stmt;
 		}
+
+		char* expanded_sql() const
+		{
+			return sqlite3_expanded_sql(m_stmt);
+		}
+
+		const char* sql() const
+		{
+			return sqlite3_sql(m_stmt);
+		}
 	private:
 		std::shared_ptr<database> m_db;
 		sqlite3_stmt* m_stmt;
+
+		exception::stmt_call_error build_error() const
+		{
+			const char* errmsg = m_db->errmsg();
+			char* expanded_sql = this->expanded_sql();
+			const char* sql = this->sql();
+			auto msg = std::format("执行预编译SQL语句失败: {}\n完整SQL: {}\nSQL: {}", errmsg, expanded_sql, sql);
+			sqlite3_free(expanded_sql);
+			return msg;
+		}
 	};
 }
