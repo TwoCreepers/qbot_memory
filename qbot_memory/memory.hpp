@@ -59,14 +59,14 @@ namespace memory
 	class database
 	{
 	public:
-		database(const std::string& db_file_path, const std::string& simple_path, const std::string& simple_dict_path)
-			: m_db{ new sqlite::database(db_file_path) },
+		database(const fs::path& db_file_path, const fs::path& simple_path, const fs::path& simple_dict_path)
+			: m_db{ new sqlite::database(db_file_path.string()) },
 			m_db_file_path{ db_file_path }
 		{
 			m_db->enable_load_extension();
-			m_db->load_extension(simple_path);
+			m_db->load_extension(simple_path.string());
 			sqlite::stmt jieba_dict_sql{ m_db, "SELECT jieba_dict(?);" };
-			jieba_dict_sql.bind(1, simple_dict_path, SQLITE_STATIC);
+			jieba_dict_sql.bind(1, simple_dict_path.string(), SQLITE_STATIC);
 			jieba_dict_sql.step();
 
 			m_db->execute(R"(
@@ -82,17 +82,17 @@ namespace memory
 		}
 		~database() = default;
 
-		fs::path db_file_path()
+		const fs::path db_file_path() const noexcept
 		{
 			return m_db_file_path;
 		}
 
-		std::shared_ptr<sqlite::database> get()
+		std::shared_ptr<sqlite::database> get() noexcept
 		{
 			return m_db;
 		}
 	private:
-		fs::path m_db_file_path;
+		const fs::path m_db_file_path;
 		std::shared_ptr<sqlite::database> m_db;
 	};
 
@@ -598,8 +598,8 @@ namespace memory
 			m_select_fts_message = sqlite::stmt(m_db, std::format(R"(SELECT rowid, message FROM {}_fts WHERE message MATCH ? ORDER BY rowid DESC;)", m_name), SQLITE_PREPARE_PERSISTENT);
 			m_select_fts_message_limit = sqlite::stmt(m_db, std::format(R"(SELECT rowid, message FROM {}_fts WHERE message MATCH ? ORDER BY rowid DESC LIMIT ?;)", m_name), SQLITE_PREPARE_PERSISTENT);
 
-			m_select_fts_highlight_message = sqlite::stmt(m_db, std::format(R"(SELECT rowid, simple_highlight({}_fts, 0 , ?, ?) FROM {}_fts WHERE message MATCH ? ORDER BY rowid DESC;)", m_name, m_name), SQLITE_PREPARE_PERSISTENT);
-			m_select_fts_highlight_message_limit = sqlite::stmt(m_db, std::format(R"(SELECT rowid, simple_highlight({}_fts, 0, ?, ?) FROM {}_fts WHERE message MATCH ? ORDER BY rowid DESC;)", m_name, m_name), SQLITE_PREPARE_PERSISTENT);
+			m_select_fts_highlight_message = sqlite::stmt(m_db, std::format(R"(SELECT rowid, simple_highlight({}_fts, 0 , ?, ?) AS text FROM {}_fts WHERE message MATCH ? ORDER BY rowid DESC;)", m_name, m_name), SQLITE_PREPARE_PERSISTENT);
+			m_select_fts_highlight_message_limit = sqlite::stmt(m_db, std::format(R"(SELECT rowid, simple_highlight({}_fts, 0, ?, ?) AS text FROM {}_fts WHERE message MATCH ? ORDER BY rowid DESC;)", m_name, m_name), SQLITE_PREPARE_PERSISTENT);
 		}
 	};
 }
