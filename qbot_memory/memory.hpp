@@ -356,7 +356,7 @@ namespace memory
 			// 参数验证
 			if (fts.has_value() + simple_query.has_value() != 1)
 			{
-				throw exception::invalid_argument("必须且只能提供一种查询类型(fts/simple_query/jieba_query)");
+				throw exception::invalid_argument("必须且只能提供一种查询类型(fts/simple_query)");
 			}
 
 			if ((simple_query.has_value() && simple_query->empty()) ||
