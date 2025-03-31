@@ -51,11 +51,12 @@ int main()
 		try
 		{
 			memory::table test1{ db, "test1", 768 };
+			test1.set_hnsw_efSearch(64);
 			test1.set_vector(text_to_vec);
 			//test1.set_vectors(texts_to_vec);
-			test1.add(memory::insert_data{ 1000, "幻日", "幻日", "幻蓝你好！", 1 });
-			test1.add(memory::insert_data{ 1023, "幻蓝", "幻蓝", "啊！是老爹啊！", 0.5 });
-			test1.add(memory::insert_data{ 1000, "幻蓝", "幻蓝", "老爹好！", 18 });
+			test1.add(memory::insert_data{ 1000, "幻日", "幻日", "幻蓝你好！", 0.11 });
+			test1.add(memory::insert_data{ 1023, "幻蓝", "幻蓝", "啊！是老爹啊！", 0.9 });
+			test1.add(memory::insert_data{ 1000, "幻蓝", "幻蓝", "老爹好！", 0.4 });
 			auto i = test1.search_list_vector_text("你好", 2);
 			std::println("sender_uuid:{} msg:{} distance:{}", i[0].sender_uuid, i[0].message, i[0].distance);
 			auto i2 = test1.search_list_vector_text("老爹", 1);
@@ -69,6 +70,8 @@ int main()
 			auto i5 = test1.search_list_highlight_fts("幻蓝", "[", "]");
 			std::println("sender_uuid:{} msg:{}", i5[0].sender_uuid, i5[0].message);
 			auto i6 = test1.search_list_vector_text("幻蓝", -1);
+			test1.forgotten();
+			test1.save_faiss_index();
 		}
 		catch (const memory::exception::base_exception& e)
 		{
