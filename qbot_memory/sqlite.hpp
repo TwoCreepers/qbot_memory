@@ -18,6 +18,13 @@
 
 namespace memory::sqlite
 {
+	enum checkpoint
+	{
+		PASSIV = SQLITE_CHECKPOINT_PASSIVE,
+		FULL = SQLITE_CHECKPOINT_FULL,
+		RESTART = SQLITE_CHECKPOINT_RESTART,
+		TRUNCATE = SQLITE_CHECKPOINT_TRUNCATE
+	};
 
 	enum SQLite_Ty
 	{
@@ -155,13 +162,13 @@ namespace memory::sqlite
 			const char* sql = nullptr;
 			switch (synchronous)
 			{
-			case OFF:
+			case synchronous_mode::OFF:
 				sql = "PRAGMA synchronous=OFF;";
 				break;
-			case NORMAL:
+			case synchronous_mode::NORMAL:
 				sql = "PRAGMA synchronous=NORMAL;";
 				break;
-			case FULL:
+			case synchronous_mode::FULL:
 				sql = "PRAGMA synchronous=FULL;";
 				break;
 			default:
@@ -176,7 +183,7 @@ namespace memory::sqlite
 			auto res = sqlite3_exec(m_db, sql, nullptr, nullptr, &errMsg);
 			if (res != SQLITE_OK)
 			{
-				throw exception::bad_database(std::format("无法设置同步模式: {} SQL: {}", errMsg, sql));
+				throw exception::bad_database(std::format("无法设置同步模式: {}\nSQL: {}", errMsg, sql));
 			}
 		}
 		void set_wal_autocheckpoint(const std::size_t wal_autocheckpoint)
@@ -186,7 +193,16 @@ namespace memory::sqlite
 			auto res = sqlite3_exec(m_db, sql.c_str(), nullptr, nullptr, &errMsg);
 			if (res != SQLITE_OK)
 			{
-				throw exception::bad_database(std::format("无法设置同步模式: {} SQL: {}", errMsg, sql));
+				throw exception::bad_database(std::format("无法设置WAL自动检查点: {}\nSQL: {}", errMsg, sql));
+			}
+		}
+		void wal_checkpoint(checkpoint moed, std::string_view db_name, int* log, int* ckpt)
+		{
+			auto res = sqlite3_wal_checkpoint_v2(m_db, db_name.data(),static_cast<int>(moed), log, ckpt);
+			if (res != SQLITE_OK)
+			{
+				const char* errMsg = errmsg();
+				throw exception::bad_database(std::format("WAL检查点错误: {}\n检查点模式: {}\nlog: {}\nckpt: {}", errMsg, moed, log, ckpt));
 			}
 		}
 	private:

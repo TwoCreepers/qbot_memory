@@ -124,6 +124,10 @@ namespace memory
 		{
 			m_db->set_wal_autocheckpoint(wal_autocheckpoint);
 		}
+		void wal_checkpoint(sqlite::checkpoint moed, std::string_view db_name, int* log, int* ckpt)
+		{
+			m_db->wal_checkpoint(moed, db_name, log, ckpt);
+		}
 	private:
 		const fs::path m_db_file_path;
 		std::shared_ptr<sqlite::database> m_db;
@@ -671,10 +675,41 @@ namespace memory
 
 		void drop()
 		{
+			m_insert_main_data.close();
+			m_insert_fts_data.close();
+
+			m_select_main_data_id.close();
+			m_select_main_data_id_no_message.close();
+			m_select_main_faiss_index_id.close();
+
+			m_select_main_sender_uuid.close();
+			m_select_main_sender_uuid_limit.close();
+
+			m_select_main_data_time_start.close();
+			m_select_main_data_time_end.close();
+			m_select_main_data_time_start_end.close();
+
+			m_select_fts_message.close();
+			m_select_fts_message_limit.close();
+
+			m_select_fts_highlight_message.close();
+			m_select_fts_highlight_message_limit.close();
+
+			m_select_main_count.close();
+
+			m_select_main_id_forget_probability.close();
+			m_select_main_id_faiss_index.close();
+			m_select_main_id_message.close();
+
+			m_update_main_id_to_faiss_index.close();
+
+			m_del_main_id.close();
+			m_del_fts_id.close();
+
 			sqlite::transaction ts(m_db, sqlite::EXCLUSIVE);
-			ts.execute(std::format("DROP TABLE IF EXISTS {}", m_name));
-			ts.execute(std::format("DROP TABLE IF EXISTS {}_fts", m_name));
-			sqlite::stmt delete_table(ts, "DELETE FROM __TABLE_MANAGE__ WHERE tablename = ?");
+			m_db->execute(std::format("DROP TABLE IF EXISTS {}", m_name));
+			m_db->execute(std::format("DROP TABLE IF EXISTS {}_fts", m_name));
+			sqlite::stmt delete_table(m_db, "DELETE FROM __TABLE_MANAGE__ WHERE tablename = ?");
 			delete_table.bind(1, m_name);
 			delete_table.step();
 			m_faiss_index.reset();

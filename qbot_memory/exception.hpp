@@ -297,6 +297,26 @@ namespace memory::exception
         virtual ~bad_database() = default;
     };
 
+    class wal_error : public bad_exception
+    {
+    public:
+        wal_error(const char* msg = "SQLITE WAL错误",
+            frame_filter_func filter = default_frame_filter,
+            const char* name = "SQLITE WAL错误")
+            : bad_exception(msg, filter, name)
+        {
+        }
+
+        wal_error(std::string msg,
+            frame_filter_func filter = default_frame_filter,
+            const char* name = "SQLITE WAL错误")
+            : bad_exception(std::move(msg), filter, name)
+        {
+        }
+
+        virtual ~wal_error() = default;
+    };
+
     class sqlite_call_error : public bad_database
     {
     public:
