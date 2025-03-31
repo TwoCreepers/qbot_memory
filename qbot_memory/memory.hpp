@@ -672,9 +672,9 @@ namespace memory
 		void drop()
 		{
 			sqlite::transaction ts(m_db, sqlite::EXCLUSIVE);
-			m_db->execute(std::format("DROP TABLE IF EXISTS {}", m_name));
-			m_db->execute(std::format("DROP TABLE IF EXISTS {}_fts", m_name));
-			sqlite::stmt delete_table(m_db, "DELETE FROM __TABLE_MANAGE__ WHERE tablename = ?");
+			ts.execute(std::format("DROP TABLE IF EXISTS {}", m_name));
+			ts.execute(std::format("DROP TABLE IF EXISTS {}_fts", m_name));
+			sqlite::stmt delete_table(ts, "DELETE FROM __TABLE_MANAGE__ WHERE tablename = ?");
 			delete_table.bind(1, m_name);
 			delete_table.step();
 			m_faiss_index.reset();
