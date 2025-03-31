@@ -69,8 +69,8 @@ int main()
 			auto i3 = test1.search_list_fts_impl("幻蓝", {}, {}, {}, {}, {});
 			std::println("sender_uuid:{} msg:{}", i3[0].sender_uuid, i3[0].message);
 			auto i5 = test1.search_list_fts_impl("幻蓝", {}, {}, "[", "]", {});
-			auto i5 = test1.search_list_fts_impl({}, {}, std::vector<std::string>{ "幻蓝" }, "[", "]", {});
-			auto i5 = test1.search_list_fts_impl({}, std::vector<std::string>{ "幻蓝" }, {}, "[", "]", {});
+			auto i6 = test1.search_list_fts_impl({}, {}, std::vector<std::string>{ "幻蓝" }, "[", "]", {});
+			auto i7 = test1.search_list_fts_impl({}, std::vector<std::string>{ "幻蓝" }, {}, "[", "]", {});
 			std::println("sender_uuid:{} msg:{}", i5[0].sender_uuid, i5[0].message);
 			//auto i6 = test1.search_list_vector_text("幻蓝", -1);
 			test1.full_rebuild_faiss_index();
