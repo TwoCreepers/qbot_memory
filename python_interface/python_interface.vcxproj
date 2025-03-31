@@ -33,6 +33,7 @@
     <ClInclude Include="register_database.hpp" />
     <ClInclude Include="register_exceptions.hpp" />
     <ClInclude Include="register_sqlite_checkpoint.hpp" />
+    <ClInclude Include="register_synchronous_mode.hpp" />
     <ClInclude Include="resister_table.hpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
