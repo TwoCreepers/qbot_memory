@@ -183,7 +183,7 @@ namespace memory
 
 			m_insert_main_data.bind(6, m_faiss_index_new_id++);
 			m_insert_main_data.bind(1, data.time);
-			if (data.sender.empty()) { m_insert_main_data.bind(2, nullptr); }
+			if (data.sender.empty()) { m_insert_main_data.bind(2, ""); }
 			else { m_insert_main_data.bind(2, data.sender); }
 			m_insert_main_data.bind(3, data.sender_uuid);
 			m_insert_main_data.bind(4, data.message);
@@ -210,7 +210,7 @@ namespace memory
 				m_insert_main_data.reset();
 				m_insert_main_data.bind(6, m_faiss_index_new_id++);
 				m_insert_main_data.bind(1, i.time);
-				if (i.sender.empty()) { m_insert_main_data.bind(2, nullptr); }
+				if (i.sender.empty()) { m_insert_main_data.bind(2, ""); }
 				else { m_insert_main_data.bind(2, i.sender); }
 				m_insert_main_data.bind(3, i.sender_uuid);
 				m_insert_main_data.bind(4, i.message);
