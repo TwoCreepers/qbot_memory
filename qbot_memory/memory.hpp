@@ -355,7 +355,7 @@ namespace memory
 			const std::optional<std::vector<std::string>>& jieba_query = {},
 			const std::optional<std::string_view>& start = {},
 			const std::optional<std::string_view>& end = {},
-			const std::optional<std::size_t>& limit)
+			const std::optional<std::size_t>& limit = {})
 		{
 			// 参数验证
 			if (fts.has_value() + simple_query.has_value() + jieba_query.has_value() != 1)
@@ -414,7 +414,7 @@ namespace memory
 			sqlite::transaction ts(m_db);
 			sqlite::stmt select_stmt(m_db, sql);
 
-			size_t bind_index = 1;
+			int bind_index = 1;
 
 			// 绑定高亮参数
 			if (start.has_value() && end.has_value())
