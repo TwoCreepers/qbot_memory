@@ -133,7 +133,7 @@ namespace memory::exception
             std::runtime_error(std::move(msg))
         {
         }
-
+        virtual const char* what() const noexcept override { return m_what_str.c_str(); }
         virtual ~runtime_error() = default;
     };
 
@@ -153,7 +153,7 @@ namespace memory::exception
             : runtime_error(std::move(msg), filter, name)
         {
         }
-
+        virtual const char* what() const noexcept override { return m_what_str.c_str(); }
         virtual ~bad_exception() = default;
     };
 
@@ -173,7 +173,7 @@ namespace memory::exception
             : bad_exception(std::move(msg), filter, name)
         {
         }
-
+        virtual const char* what() const noexcept override { return m_what_str.c_str(); }
         virtual ~bad_function_call() = default;
     };
 
@@ -193,7 +193,7 @@ namespace memory::exception
             : bad_exception(std::move(msg), filter, name)
         {
         }
-
+        virtual const char* what() const noexcept override { return m_what_str.c_str(); }
         virtual ~bad_stmt() = default;
     };
 
@@ -213,7 +213,7 @@ namespace memory::exception
             : bad_stmt(std::move(msg), filter, name)
         {
         }
-
+        virtual const char* what() const noexcept override { return m_what_str.c_str(); }
         virtual ~stmt_call_error() = default;
     };
 
@@ -233,7 +233,7 @@ namespace memory::exception
             : bad_stmt(std::move(msg), filter, name)
         {
         }
-
+        virtual const char* what() const noexcept override { return m_what_str.c_str(); }
         virtual ~stmt_bind_error() = default;
     };
 
@@ -253,7 +253,7 @@ namespace memory::exception
             : bad_stmt(std::move(msg), filter, name)
         {
         }
-
+        virtual const char* what() const noexcept override { return m_what_str.c_str(); }
         virtual ~stmt_reset_error() = default;
     };
 
@@ -273,7 +273,7 @@ namespace memory::exception
             : bad_exception(std::move(msg), filter, name)
         {
         }
-
+        virtual const char* what() const noexcept override { return m_what_str.c_str(); }
         virtual ~bad_transaction() = default;
     };
 
@@ -293,7 +293,7 @@ namespace memory::exception
             : bad_exception(std::move(msg), filter, name)
         {
         }
-
+        virtual const char* what() const noexcept override { return m_what_str.c_str(); }
         virtual ~bad_database() = default;
     };
 
@@ -313,7 +313,7 @@ namespace memory::exception
             : bad_database(std::move(msg), filter, name)
         {
         }
-
+        virtual const char* what() const noexcept override { return m_what_str.c_str(); }
         virtual ~wal_error() = default;
     };
 
@@ -333,7 +333,7 @@ namespace memory::exception
             : bad_database(std::move(msg), filter, name)
         {
         }
-
+        virtual const char* what() const noexcept override { return m_what_str.c_str(); }
         virtual ~sqlite_call_error() = default;
     };
 
@@ -353,7 +353,7 @@ namespace memory::exception
             : sqlite_call_error(std::move(msg), filter, name)
         {
         }
-
+        virtual const char* what() const noexcept override { return m_what_str.c_str(); }
         virtual ~sqlite_extension_error() = default;
     };
 
@@ -369,7 +369,7 @@ namespace memory::exception
             frame_filter_func filter = default_frame_filter,
             const char* name = "无效参数异常")
             : runtime_error(msg, filter, name), std::invalid_argument(std::move(msg)) {}
-
+        virtual const char* what() const noexcept override { return m_what_str.c_str(); }
         virtual ~invalid_argument() = default;
     };
 
@@ -389,7 +389,7 @@ namespace memory::exception
             : runtime_error(std::move(msg), filter, name)
         {
         }
-
+        virtual const char* what() const noexcept override { return m_what_str.c_str(); }
         virtual ~length_error() = default;
     };
 
@@ -409,7 +409,7 @@ namespace memory::exception
             : bad_exception(std::move(msg), filter, name)
         {
         }
-
+        virtual const char* what() const noexcept override { return m_what_str.c_str(); }
         virtual ~bad_alloc() = default;
     };
 
@@ -429,7 +429,7 @@ namespace memory::exception
             : runtime_error(msg, filter, name)
         {
         }
-
+        virtual const char* what() const noexcept override { return m_what_str.c_str(); }
         virtual ~range_error() = default;
     };
 
@@ -449,7 +449,7 @@ namespace memory::exception
             : range_error(std::move(msg), filter, name)
         {
         }
-
+        virtual const char* what() const noexcept override { return m_what_str.c_str(); }
         virtual ~out_of_range() = default;
     };
 
@@ -471,7 +471,7 @@ namespace memory::exception
             std::overflow_error(msg)
         {
         }
-
+        virtual const char* what() const noexcept override { return m_what_str.c_str(); }
         virtual ~overflow_error() = default;
     };
 }
