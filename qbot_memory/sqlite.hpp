@@ -318,7 +318,7 @@ namespace memory::sqlite
 			switch (level)
 			{
 			case DEFAULT:    sql = "BEGIN;"; break;
-			case READ_ONLY:    sql = "EGIN TRANSACTION READ ONLY;"; break;
+			case READ_ONLY:    sql = "BEGIN TRANSACTION READ ONLY;"; break;
 			case DEFERRED:  sql = "BEGIN DEFERRED;"; break;
 			case IMMEDIATE: sql = "BEGIN IMMEDIATE;"; break;
 			case EXCLUSIVE:  sql = "BEGIN EXCLUSIVE;"; break;
