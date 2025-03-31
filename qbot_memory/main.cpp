@@ -47,7 +47,7 @@ int main()
 {
 	try
 	{
-		auto db = std::make_shared<memory::database>(R"(C:\game\123\test\02\__test__.db)", R"(C:/game/source/SQLite_extension/simple.dll)", R"(C:/game/source/SQLite_extension/dict)");
+		auto db = std::make_shared<memory::database>(R"(C:\game\123\test\02\__test__.db)", R"(C:/game/source/SQLite_extension/simple.dll)");
 		try
 		{
 			memory::table test1{ db, "test1", 768 };
