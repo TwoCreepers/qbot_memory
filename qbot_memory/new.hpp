@@ -1,35 +1,52 @@
 #pragma once
 
+#ifdef _MSC_VER
 #include "exception.hpp"
-
 #include <malloc.h>
-
-
-_Ret_notnull_ _Success_(return != 0) _Post_writable_byte_size_(size)
-void* __CRTDECL operator new(std::size_t size)
+_VCRT_EXPORT_STD _NODISCARD _Ret_notnull_ _Post_writable_byte_size_(_Size) _VCRT_ALLOCATOR
+void* __CRTDECL operator new(
+    size_t _Size
+    )
 {
-    void* ptr = std::malloc(size);
-    if (!ptr)
-    {
-        throw memory::exception::bad_alloc("内存分配失败(你看看你都做了些什么!)");
+    void* ptr;
+    while ((ptr = std::malloc(_Size)) == nullptr) {
+        std::new_handler handler = std::get_new_handler();
+        if (!handler) {
+            throw memory::exception::bad_alloc("内存分配失败");
+        }
+        handler();
     }
     return ptr;
 }
 
-_Ret_notnull_ _Success_(return != 0) _Post_writable_byte_size_(size)
-void* __CRTDECL operator new[](std::size_t size)
+_VCRT_EXPORT_STD _NODISCARD _Ret_notnull_ _Post_writable_byte_size_(_Size) _VCRT_ALLOCATOR
+void* __CRTDECL operator new[](
+    size_t _Size
+    )
 {
-    return operator new(size);
+    return operator new(_Size);
 }
 
-_Ret_maybenull_ _Post_writable_byte_size_(size)
-void* operator new(std::size_t size, const std::nothrow_t&) noexcept
+#ifdef __cpp_aligned_new
+_VCRT_EXPORT_STD _NODISCARD _Ret_notnull_ _Post_writable_byte_size_(_Size) _VCRT_ALLOCATOR
+void* __CRTDECL operator new(
+    size_t             _Size,
+    ::std::align_val_t _Al
+    )
 {
-    return std::malloc(size);
+    if (_Size == 0) _Size = 1;
+    void* ptr = _aligned_malloc(_Size, static_cast<size_t>(_Al));
+    if (!ptr) throw memory::exception::bad_alloc("内存分配失败(你看看你都做了些什么!)");
+    return ptr;
 }
 
-_Ret_maybenull_ _Post_writable_byte_size_(size)
-void* operator new[](std::size_t size, const std::nothrow_t&) noexcept
+_VCRT_EXPORT_STD _NODISCARD _Ret_notnull_ _Post_writable_byte_size_(_Size) _VCRT_ALLOCATOR
+void* __CRTDECL operator new[](
+    size_t             _Size,
+    ::std::align_val_t _Al
+    )
 {
-    return std::malloc(size);
+    return operator new(_Size, _Al);
 }
+#endif
+#endif
