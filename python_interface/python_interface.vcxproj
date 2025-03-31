@@ -27,6 +27,14 @@
       <UseLibraryDependencyInputs>false</UseLibraryDependencyInputs>
     </ProjectReference>
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="register_data.hpp" />
+    <ClInclude Include="register_ckeck.hpp" />
+    <ClInclude Include="register_database.hpp" />
+    <ClInclude Include="register_exceptions.hpp" />
+    <ClInclude Include="register_sqlite_checkpoint.hpp" />
+    <ClInclude Include="resister_table.hpp" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
