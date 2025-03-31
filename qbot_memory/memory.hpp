@@ -389,24 +389,26 @@ namespace memory
 			else if (simple_query.has_value())
 			{
 				query_type = "simple_query";
-				arguments = "?";
+				arguments = "(?";
 				for (size_t i = 1; i < simple_query->size(); i++)
 				{
 					arguments += ", ?";
 				}
+				arguments += ")";
 			}
 			else
 			{ // jieba_query
 				query_type = "jieba_query";
-				arguments = "?";
+				arguments = "(?";
 				for (size_t i = 1; i < jieba_query->size(); i++)
 				{
 					arguments += ", ?";
 				}
+				arguments += ")";
 			}
 
 			std::string sql = std::format(
-				"SELECT rowid, {} FROM {}_fts WHERE message MATCH {}({}) ORDER BY rowid DESC{};",
+				"SELECT rowid, {} FROM {}_fts WHERE message MATCH {}{} ORDER BY rowid DESC{};",
 				message_select, m_name, query_type, arguments, limit.has_value() ? " LIMIT ?" : ""
 			);
 
