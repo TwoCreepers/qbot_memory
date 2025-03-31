@@ -65,8 +65,6 @@ PYBIND11_MODULE(qbot_memory, m)
         .def("search_list_time_start", &me::table::search_list_time_start)
         .def("search_list_time_end", &me::table::search_list_time_end)
         .def("search_list_time_start_end", &me::table::search_list_time_start_end)
-        .def("search_list_fts", &me::table::search_list_fts)
-        .def("search_list_fts_limit", &me::table::search_list_fts_limit)
         .def("search_list_vector_text", &me::table::search_list_vector_text)
         ;
 }
