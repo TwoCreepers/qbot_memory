@@ -605,7 +605,7 @@ namespace memory::sqlite
 			case SQLITE_DONE:
 				break;
 			default:
-				throw build_error();
+				throw exception::stmt_call_error(format_errmsg());
 				break;
 			}
 			return res;
@@ -621,7 +621,7 @@ namespace memory::sqlite
 			case SQLITE_DONE:
 				break;
 			default:
-				throw build_error();
+				throw exception::stmt_call_error(format_errmsg());
 				break;
 			}
 			return res;
@@ -664,13 +664,12 @@ namespace memory::sqlite
 		std::shared_ptr<database> m_db;
 		sqlite3_stmt* m_stmt;
 
-		exception::stmt_call_error build_error() const
+		std::string format_errmsg() const
 		{
 			const char* errmsg = m_db->errmsg();
 			char* expanded_sql = this->expanded_sql();
 			const char* sql = this->sql();
 			auto msg = std::format("执行预编译SQL语句失败: {}\n完整SQL: {}\nSQL: {}", errmsg, expanded_sql, sql);
-			sqlite3_free(expanded_sql);
 			return msg;
 		}
 	};
