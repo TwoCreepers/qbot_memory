@@ -153,6 +153,8 @@ namespace memory
 		}
 		void save_faiss_index()
 		{
+			if (!m_faiss_index)
+				return;
 			sqlite::stmt update_faiss_new_id{ m_db, R"(UPDATE __TABLE_MANAGE__ SET faiss_new_id = ? WHERE tablename = ?;)" };
 			update_faiss_new_id.bind(1, m_faiss_index_new_id);
 			update_faiss_new_id.bind(2, m_name);
@@ -595,8 +597,8 @@ namespace memory
 			for (const auto& i : ids)
 			{
 				m_update_main_id_to_faiss_index.reset();
-				m_update_main_id_to_faiss_index.bind(1, i);
-				m_update_main_id_to_faiss_index.bind(2, m_faiss_index_new_id++);
+				m_update_main_id_to_faiss_index.bind(2, i);
+				m_update_main_id_to_faiss_index.bind(1, m_faiss_index_new_id++);
 				m_update_main_id_to_faiss_index.step();
 			}
 			m_faiss_index = new_faiss_index;
@@ -642,6 +644,7 @@ namespace memory
 			sqlite::transaction ts(m_db, sqlite::IMMEDIATE);
 
 			m_select_main_count.reset();
+			m_select_main_count.step();
 			auto faiss_index_size = m_select_main_count.get_column_uint64(0);
 			std::vector<std::size_t> ids;
 			std::vector<std::string> messages;
@@ -663,6 +666,18 @@ namespace memory
 				m_update_main_id_to_faiss_index.step();
 			}
 			m_faiss_index = new_faiss_index;
+			ts.commit();
+		}
+
+		void drop()
+		{
+			sqlite::transaction ts(m_db, sqlite::EXCLUSIVE);
+			m_db->execute(std::format("DROP TABLE IF EXISTS {}", m_name));
+			m_db->execute(std::format("DROP TABLE IF EXISTS {}_fts", m_name));
+			sqlite::stmt delete_table(m_db, "DELETE FROM __TABLE_MANAGE__ WHERE tablename = ?");
+			delete_table.bind(1, m_name);
+			delete_table.step();
+			m_faiss_index.reset();
 			ts.commit();
 		}
 	private:
