@@ -349,111 +349,123 @@ namespace memory
 			return res;
 		}
 
-		std::vector<select_fts_data> search_list_fts(std::string_view fts)
+		std::vector<select_fts_data> search_list_fts_impl(
+			const std::optional<std::string_view>& fts = {},
+			const std::optional<std::vector<std::string>>& simple_query = {},
+			const std::optional<std::vector<std::string>>& jieba_query = {},
+			const std::optional<std::string_view>& start = {},
+			const std::optional<std::string_view>& end = {},
+			const std::optional<std::size_t>& limit)
 		{
-			sqlite::transaction ts(m_db);
+			// 参数验证
+			if (fts.has_value() + simple_query.has_value() + jieba_query.has_value() != 1)
+			{
+				throw exception::invalid_argument("必须且只能提供一种查询类型(fts/simple_query/jieba_query)");
+			}
 
+			if ((simple_query.has_value() && simple_query->empty()) ||
+				(jieba_query.has_value() && jieba_query->empty()))
+			{
+				throw exception::invalid_argument("查询参数不能为空");
+			}
+
+			if (limit.has_value())
+			{
+				check_limit(*limit);
+			}
+
+			// 准备SQL语句
+			std::string message_select = (start.has_value() && end.has_value())
+				? std::format("simple_highlight({}_fts, 0 , ?, ?) AS text", m_name)
+				: "message";
+
+			std::string query_type;
+			std::string arguments;
+
+			if (fts.has_value())
+			{
+				query_type = "?";
+			}
+			else if (simple_query.has_value())
+			{
+				query_type = "simple_query";
+				arguments = "?";
+				for (size_t i = 1; i < simple_query->size(); i++)
+				{
+					arguments += ", ?";
+				}
+			}
+			else
+			{ // jieba_query
+				query_type = "jieba_query";
+				arguments = "?";
+				for (size_t i = 1; i < jieba_query->size(); i++)
+				{
+					arguments += ", ?";
+				}
+			}
+
+			std::string sql = std::format(
+				"SELECT rowid, {} FROM {}_fts WHERE message MATCH {}({}) ORDER BY rowid DESC{};",
+				message_select, m_name, query_type, arguments, limit.has_value() ? " LIMIT ?" : ""
+			);
+
+			// 执行查询
+			sqlite::transaction ts(m_db);
+			sqlite::stmt select_stmt(m_db, sql);
+
+			size_t bind_index = 1;
+
+			// 绑定高亮参数
+			if (start.has_value() && end.has_value())
+			{
+				select_stmt.bind(bind_index++, *start, SQLITE_STATIC);
+				select_stmt.bind(bind_index++, *end, SQLITE_STATIC);
+			}
+
+			// 绑定查询参数
+			if (fts.has_value())
+			{
+				select_stmt.bind(bind_index++, *fts, SQLITE_STATIC);
+			}
+			else if (simple_query.has_value())
+			{
+				for (const auto& term : *simple_query)
+				{
+					select_stmt.bind(bind_index++, term);
+				}
+			}
+			else
+			{ // jieba_query
+				for (const auto& term : *jieba_query)
+				{
+					select_stmt.bind(bind_index++, term);
+				}
+			}
+
+			// 绑定limit参数
+			if (limit.has_value())
+			{
+				select_stmt.bind(bind_index++, *limit);
+			}
+
+			// 处理结果
 			std::vector<select_fts_data> res;
-			m_select_fts_message.reset();
-			m_select_fts_message.bind(1, fts, SQLITE_STATIC);
-			while (m_select_fts_message.step() == SQLITE_ROW)
+			while (select_stmt.step() == SQLITE_ROW)
 			{
 				m_select_main_data_id_no_message.reset();
-				m_select_main_data_id_no_message.bind(1, m_select_fts_message.get_column_uint64(0));
+				m_select_main_data_id_no_message.bind(1, select_stmt.get_column_uint64(0));
 				m_select_main_data_id_no_message.step();
 				res.emplace_back(
 					m_select_main_data_id_no_message.get_column_uint64(0),
 					m_select_main_data_id_no_message.get_column_uint64(1),
 					m_select_main_data_id_no_message.get_column_str(2),
 					m_select_main_data_id_no_message.get_column_str(3),
-					m_select_fts_message.get_column_str(1)
+					select_stmt.get_column_str(1)
 				);
 			}
 
 			ts.commit();
-
-			return res;
-		}
-		std::vector<select_fts_data> search_list_fts_limit(std::string_view fts, const std::size_t limit)
-		{
-			sqlite::transaction ts(m_db);
-
-			std::vector<select_fts_data> res;
-			m_select_fts_message_limit.reset();
-			m_select_fts_message_limit.bind(1, fts, SQLITE_STATIC);
-			m_select_fts_message_limit.bind(2, limit);
-			while (m_select_fts_message_limit.step() == SQLITE_ROW)
-			{
-				m_select_main_data_id_no_message.reset();
-				m_select_main_data_id_no_message.bind(1, m_select_fts_message_limit.get_column_uint64(0));
-				m_select_main_data_id_no_message.step();
-				res.emplace_back(
-					m_select_main_data_id_no_message.get_column_uint64(0),
-					m_select_main_data_id_no_message.get_column_uint64(1),
-					m_select_main_data_id_no_message.get_column_str(2),
-					m_select_main_data_id_no_message.get_column_str(3),
-					m_select_fts_message_limit.get_column_str(1)
-				);
-			}
-
-			ts.commit();
-
-			return res;
-		}
-
-		std::vector<select_fts_data> search_list_highlight_fts(std::string_view fts, std::string_view start, std::string_view end)
-		{
-			sqlite::transaction ts(m_db);
-
-			std::vector<select_fts_data> res;
-			m_select_fts_highlight_message.reset();
-			m_select_fts_highlight_message.bind(3, fts, SQLITE_STATIC);
-			m_select_fts_highlight_message.bind(1, start, SQLITE_STATIC);
-			m_select_fts_highlight_message.bind(2, end, SQLITE_STATIC);
-			while (m_select_fts_highlight_message.step() == SQLITE_ROW)
-			{
-				m_select_main_data_id_no_message.reset();
-				m_select_main_data_id_no_message.bind(1, m_select_fts_highlight_message.get_column_uint64(0));
-				m_select_main_data_id_no_message.step();
-				res.emplace_back(
-					m_select_main_data_id_no_message.get_column_uint64(0),
-					m_select_main_data_id_no_message.get_column_uint64(1),
-					m_select_main_data_id_no_message.get_column_str(2),
-					m_select_main_data_id_no_message.get_column_str(3),
-					m_select_fts_highlight_message.get_column_str(1)
-				);
-			}
-
-			ts.commit();
-
-			return res;
-		}
-		std::vector<select_fts_data> search_list_highlight_fts_limit(std::string_view fts, std::string_view start, std::string_view end, const std::size_t limit)
-		{
-			sqlite::transaction ts(m_db);
-
-			std::vector<select_fts_data> res;
-			m_select_fts_highlight_message_limit.reset();
-			m_select_fts_highlight_message_limit.bind(3, fts, SQLITE_STATIC);
-			m_select_fts_highlight_message_limit.bind(1, start, SQLITE_STATIC);
-			m_select_fts_highlight_message_limit.bind(2, end, SQLITE_STATIC);
-			m_select_fts_highlight_message_limit.bind(4, limit);
-			while (m_select_fts_highlight_message_limit.step() == SQLITE_ROW)
-			{
-				m_select_main_data_id_no_message.reset();
-				m_select_main_data_id_no_message.bind(1, m_select_fts_highlight_message_limit.get_column_uint64(0));
-				m_select_main_data_id_no_message.step();
-				res.emplace_back(
-					m_select_main_data_id_no_message.get_column_uint64(0),
-					m_select_main_data_id_no_message.get_column_uint64(1),
-					m_select_main_data_id_no_message.get_column_str(2),
-					m_select_main_data_id_no_message.get_column_str(3),
-					m_select_fts_highlight_message_limit.get_column_str(1)
-				);
-			}
-
-			ts.commit();
-
 			return res;
 		}
 
@@ -499,17 +511,20 @@ namespace memory
 			return res;
 
 		}
-		std::vector<select_vector_data> search_list_vector_text_limit(const std::vector<std::string>& message, const faiss::idx_t k, const faiss::idx_t limit)
+		std::vector<select_vector_data> search_list_vector_texts(const std::vector<std::string>& messages, const faiss::idx_t k)
 		{
-			check_limit(limit);
+			if (messages.empty())
+			{
+				throw exception::invalid_argument("messages不能为空, 但实际为空");
+			}
 			ckeck_k(k);
 
 			sqlite::transaction ts(m_db);
 
-			auto vector = string_generate_vectors(message);
-			std::vector<faiss::idx_t> indices(k * limit); // 索引结果
-			std::vector<float> distances(k * limit);        // 距离结果
-			m_faiss_index->search(limit, vector.data(), k, distances.data(), indices.data());
+			auto vector = string_generate_vectors(messages);
+			std::vector<faiss::idx_t> indices(k * messages.size()); // 索引结果
+			std::vector<float> distances(k * messages.size());        // 距离结果
+			m_faiss_index->search(messages.size(), vector.data(), k, distances.data(), indices.data());
 
 			std::vector<select_vector_data> res;
 			res.reserve(indices.size());
@@ -689,12 +704,6 @@ namespace memory
 			m_select_main_data_time_end.close();
 			m_select_main_data_time_start_end.close();
 
-			m_select_fts_message.close();
-			m_select_fts_message_limit.close();
-
-			m_select_fts_highlight_message.close();
-			m_select_fts_highlight_message_limit.close();
-
 			m_select_main_count.close();
 
 			m_select_main_id_forget_probability.close();
@@ -709,7 +718,7 @@ namespace memory
 			sqlite::transaction ts(m_db, sqlite::EXCLUSIVE);
 			m_db->execute(std::format("DROP TABLE IF EXISTS {}", m_name));
 			m_db->execute(std::format("DROP TABLE IF EXISTS {}_fts", m_name));
-			sqlite::stmt delete_table(m_db, "DELETE FROM __TABLE_MANAGE__ WHERE tablename = ?");
+			sqlite::stmt delete_table(m_db, "DELETE FROM __TABLE_MANAGE__ WHERE tablename = ?", SQLITE_PREPARE_NO_VTAB);
 			delete_table.bind(1, m_name);
 			delete_table.step();
 			m_faiss_index.reset();
@@ -742,12 +751,6 @@ namespace memory
 		sqlite::stmt m_select_main_data_time_start;
 		sqlite::stmt m_select_main_data_time_end;
 		sqlite::stmt m_select_main_data_time_start_end;
-
-		sqlite::stmt m_select_fts_message;
-		sqlite::stmt m_select_fts_message_limit;
-
-		sqlite::stmt m_select_fts_highlight_message;
-		sqlite::stmt m_select_fts_highlight_message_limit;
 
 		sqlite::stmt m_select_main_count;
 
@@ -891,12 +894,6 @@ namespace memory
 			m_select_main_data_time_start = sqlite::stmt(m_db, std::format(R"(SELECT id, timestamp, sender, sender_uuid, message FROM {} WHERE timestamp >= ? ORDER BY timestamp DESC;)", m_name), SQLITE_PREPARE_NO_VTAB | SQLITE_PREPARE_PERSISTENT);
 			m_select_main_data_time_end = sqlite::stmt(m_db, std::format(R"(SELECT id, timestamp, sender, sender_uuid, message FROM {} WHERE timestamp <= ? ORDER BY timestamp DESC;)", m_name), SQLITE_PREPARE_NO_VTAB | SQLITE_PREPARE_PERSISTENT);
 			m_select_main_data_time_start_end = sqlite::stmt(m_db, std::format(R"(SELECT id, timestamp, sender, sender_uuid, message FROM {} WHERE timestamp >= ? AND timestamp <= ? ORDER BY timestamp DESC;)", m_name), SQLITE_PREPARE_NO_VTAB | SQLITE_PREPARE_PERSISTENT);
-
-			m_select_fts_message = sqlite::stmt(m_db, std::format(R"(SELECT rowid, message FROM {}_fts WHERE message MATCH ? ORDER BY rowid DESC;)", m_name), SQLITE_PREPARE_PERSISTENT);
-			m_select_fts_message_limit = sqlite::stmt(m_db, std::format(R"(SELECT rowid, message FROM {}_fts WHERE message MATCH ? ORDER BY rowid DESC LIMIT ?;)", m_name), SQLITE_PREPARE_PERSISTENT);
-
-			m_select_fts_highlight_message = sqlite::stmt(m_db, std::format(R"(SELECT rowid, simple_highlight({}_fts, 0 , ?, ?) AS text FROM {}_fts WHERE message MATCH ? ORDER BY rowid DESC;)", m_name, m_name), SQLITE_PREPARE_PERSISTENT);
-			m_select_fts_highlight_message_limit = sqlite::stmt(m_db, std::format(R"(SELECT rowid, simple_highlight({}_fts, 0, ?, ?) AS text FROM {}_fts WHERE message MATCH ? ORDER BY rowid DESC;)", m_name, m_name), SQLITE_PREPARE_PERSISTENT);
 
 			m_select_main_count = sqlite::stmt(m_db, std::format(R"(SELECT count(*) FROM {};)", m_name), SQLITE_PREPARE_NO_VTAB | SQLITE_PREPARE_PERSISTENT);
 
