@@ -297,20 +297,20 @@ namespace memory::exception
         virtual ~bad_database() = default;
     };
 
-    class wal_error : public bad_exception
+    class wal_error : public bad_database
     {
     public:
         wal_error(const char* msg = "SQLITE WAL错误",
             frame_filter_func filter = default_frame_filter,
             const char* name = "SQLITE WAL错误")
-            : bad_exception(msg, filter, name)
+            : bad_database(msg, filter, name)
         {
         }
 
         wal_error(std::string msg,
             frame_filter_func filter = default_frame_filter,
             const char* name = "SQLITE WAL错误")
-            : bad_exception(std::move(msg), filter, name)
+            : bad_database(std::move(msg), filter, name)
         {
         }
 
@@ -357,60 +357,40 @@ namespace memory::exception
         virtual ~sqlite_extension_error() = default;
     };
 
-    class invalid_argument : public bad_exception, public std::invalid_argument
+    class invalid_argument : public runtime_error, public std::invalid_argument
     {
     public:
         invalid_argument(const char* msg = "无效的参数",
             frame_filter_func filter = default_frame_filter,
             const char* name = "无效参数异常")
-            : bad_exception(msg, filter, name), std::invalid_argument(msg) {}
+            : runtime_error(msg, filter, name), std::invalid_argument(msg) {}
 
         invalid_argument(std::string msg,
             frame_filter_func filter = default_frame_filter,
             const char* name = "无效参数异常")
-            : bad_exception(msg, filter, name), std::invalid_argument(std::move(msg)) {}
+            : runtime_error(msg, filter, name), std::invalid_argument(std::move(msg)) {}
 
         virtual ~invalid_argument() = default;
     };
 
-    class length_error : public bad_exception
+    class length_error : public runtime_error
     {
     public:
         length_error(const char* msg = "长度错误",
             frame_filter_func filter = default_frame_filter,
             const char* name = "长度异常")
-            : bad_exception(msg, filter, name)
+            : runtime_error(msg, filter, name)
         {
         }
 
         length_error(std::string msg,
             frame_filter_func filter = default_frame_filter,
             const char* name = "长度异常")
-            : bad_exception(std::move(msg), filter, name)
+            : runtime_error(std::move(msg), filter, name)
         {
         }
 
         virtual ~length_error() = default;
-    };
-
-    class out_of_range : public bad_exception
-    {
-    public:
-        out_of_range(const char* msg = "超出有效范围",
-            frame_filter_func filter = default_frame_filter,
-            const char* name = "范围异常")
-            : bad_exception(msg, filter, name)
-        {
-        }
-
-        out_of_range(std::string msg,
-            frame_filter_func filter = default_frame_filter,
-            const char* name = "范围异常")
-            : bad_exception(std::move(msg), filter, name)
-        {
-        }
-
-        virtual ~out_of_range() = default;
     };
 
     class bad_alloc : public bad_exception, public std::bad_alloc
@@ -431,5 +411,67 @@ namespace memory::exception
         }
 
         virtual ~bad_alloc() = default;
+    };
+
+    class range_error : public runtime_error
+    {
+    public:
+        range_error(const char* msg = "内存分配失败",
+            frame_filter_func filter = default_frame_filter,
+            const char* name = "范围错误")
+            : runtime_error(msg, filter, name)
+        {
+        }
+
+        range_error(std::string msg,
+            frame_filter_func filter = default_frame_filter,
+            const char* name = "范围错误")
+            : runtime_error(msg, filter, name)
+        {
+        }
+
+        virtual ~range_error() = default;
+    };
+
+    class out_of_range : public range_error
+    {
+    public:
+        out_of_range(const char* msg = "超出有效范围",
+            frame_filter_func filter = default_frame_filter,
+            const char* name = "超出范围错误")
+            : range_error(msg, filter, name)
+        {
+        }
+
+        out_of_range(std::string msg,
+            frame_filter_func filter = default_frame_filter,
+            const char* name = "超出范围错误")
+            : range_error(std::move(msg), filter, name)
+        {
+        }
+
+        virtual ~out_of_range() = default;
+    };
+
+    class overflow_error : public runtime_error, public std::overflow_error
+    {
+    public:
+        overflow_error(const char* msg = "运算溢出",
+            frame_filter_func filter = default_frame_filter,
+            const char* name = "溢出错误")
+            : ::memory::exception::runtime_error(msg, filter, name),
+            std::overflow_error(msg)
+        {
+        }
+
+        overflow_error(std::string msg,
+            frame_filter_func filter = default_frame_filter,
+            const char* name = "溢出错误")
+            : ::memory::exception::runtime_error(msg, filter, name),
+            std::overflow_error(msg)
+        {
+        }
+
+        virtual ~overflow_error() = default;
     };
 }
