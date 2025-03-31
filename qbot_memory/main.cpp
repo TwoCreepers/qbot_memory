@@ -4,7 +4,6 @@
 #include <cpr/api.h>
 #include <cpr/body.h>
 #include <cpr/cprtypes.h>
-#include <eh.h>
 #include <memory>
 #include <nlohmann/json.hpp>
 #include <nlohmann/json_fwd.hpp>
@@ -44,30 +43,8 @@ std::vector<float> texts_to_vec(const std::vector<std::string>& vec)
 	return {};
 }
 
-void func()
-{
-	__try
-	{
-		int* p = nullptr;
-		*p = 42;
-	}
-	__finally
-	{
-
-	}
-}
-
 int main()
 {
-	_set_se_translator(memory::exception::default_translate_SEH_to_CE);
-	try
-	{
-		func();
-	}
-	catch (const memory::exception::base_exception& e)
-	{
-		std::println("{}", e.what());
-	}
 	try
 	{
 		auto db = std::make_shared<memory::database>(R"(C:\game\123\test\02\__test__.db)", R"(C:/game/source/SQLite插件/simple.dll)", R"(C:/game/source/SQLite插件/dict)");
