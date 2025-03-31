@@ -152,7 +152,6 @@
   <ItemGroup>
     <ClInclude Include="exception.hpp" />
     <ClInclude Include="faiss.hpp" />
-    <ClInclude Include="new.hpp" />
     <ClInclude Include="py.hpp" />
     <ClInclude Include="sqlite.hpp" />
     <ClInclude Include="thread_pool.hpp" />
