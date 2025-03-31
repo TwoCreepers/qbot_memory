@@ -703,6 +703,7 @@ namespace memory
 			delete_table.bind(1, m_name);
 			delete_table.step();
 			m_faiss_index.reset();
+			fs::remove(m_faiss_fullpath);
 			ts.commit();
 		}
 	private:
