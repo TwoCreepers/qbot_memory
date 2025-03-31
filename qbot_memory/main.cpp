@@ -47,7 +47,7 @@ int main()
 {
 	try
 	{
-		auto db = std::make_shared<memory::database>(R"(C:\game\123\test\02\__test__.db)", R"(C:/game/source/SQLite插件/simple.dll)", R"(C:/game/source/SQLite插件/dict)");
+		auto db = std::make_shared<memory::database>(R"(C:\game\123\test\02\__test__.db)", R"(C:/game/source/SQLite_extension/simple.dll)", R"(C:/game/source/SQLite_extension/dict)");
 		try
 		{
 			memory::table test1{ db, "test1", 768 };
@@ -66,11 +66,10 @@ int main()
 			auto i4 = test1.search_list_vector_text("幻蓝", 1);
 			if (!i4.empty())
 				std::println("sender_uuid:{} msg:{} distance:{}", i4[0].sender_uuid, i4[0].message, i2[0].distance);
-			auto i3 = test1.search_list_fts_impl("幻蓝", {}, {}, {}, {}, {});
+			auto i3 = test1.search_list_fts_impl("幻蓝", {}, {}, {}, {});
 			std::println("sender_uuid:{} msg:{}", i3[0].sender_uuid, i3[0].message);
-			auto i5 = test1.search_list_fts_impl("幻蓝", {}, {}, "[", "]", {});
-			auto i6 = test1.search_list_fts_impl({}, {}, std::vector<std::string>{ "幻蓝" }, "[", "]", {});
-			auto i7 = test1.search_list_fts_impl({}, std::vector<std::string>{ "幻蓝" }, {}, "[", "]", {});
+			auto i5 = test1.search_list_fts_impl("幻蓝", {}, "[", "]", {});
+			auto i7 = test1.search_list_fts_impl({}, std::vector<std::string>{ "幻蓝" }, "[", "]", {});
 			std::println("sender_uuid:{} msg:{}", i5[0].sender_uuid, i5[0].message);
 			//auto i6 = test1.search_list_vector_text("幻蓝", -1);
 			test1.full_rebuild_faiss_index();
