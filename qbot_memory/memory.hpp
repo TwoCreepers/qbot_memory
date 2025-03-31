@@ -237,7 +237,7 @@ namespace memory
 		}
 		std::vector<select_data> search_list_uuid(std::string_view uuid)
 		{
-			sqlite::transaction ts(m_db, sqlite::READ_ONLY);
+			sqlite::transaction ts(m_db);
 
 			m_select_main_sender_uuid.reset();
 			m_select_main_sender_uuid.bind(1, uuid);
@@ -258,7 +258,7 @@ namespace memory
 		}
 		std::vector<select_data> search_list_uuid_limit(std::string_view uuid, const std::size_t limit)
 		{
-			sqlite::transaction ts(m_db, sqlite::READ_ONLY);
+			sqlite::transaction ts(m_db);
 
 			m_select_main_sender_uuid_limit.reset();
 			m_select_main_sender_uuid_limit.bind(1, uuid);
@@ -280,7 +280,7 @@ namespace memory
 		}
 		std::vector<select_data> search_list_time_start(const std::size_t start)
 		{
-			sqlite::transaction ts(m_db, sqlite::READ_ONLY);
+			sqlite::transaction ts(m_db);
 
 			m_select_main_data_time_start.reset();
 			m_select_main_data_time_start.bind(1, start);
@@ -301,7 +301,7 @@ namespace memory
 		}
 		std::vector<select_data> search_list_time_end(const std::size_t end)
 		{
-			sqlite::transaction ts(m_db, sqlite::READ_ONLY);
+			sqlite::transaction ts(m_db);
 
 			m_select_main_data_time_end.reset();
 			m_select_main_data_time_end.bind(1, end);
@@ -322,7 +322,7 @@ namespace memory
 		}
 		std::vector<select_data> search_list_time_start_end(const std::size_t start, const std::size_t end)
 		{
-			sqlite::transaction ts(m_db, sqlite::READ_ONLY);
+			sqlite::transaction ts(m_db);
 
 			m_select_main_data_time_start_end.reset();
 			m_select_main_data_time_start_end.bind(1, start);
@@ -345,7 +345,7 @@ namespace memory
 
 		std::vector<select_fts_data> search_list_fts(std::string_view fts)
 		{
-			sqlite::transaction ts(m_db, sqlite::READ_ONLY);
+			sqlite::transaction ts(m_db);
 
 			std::vector<select_fts_data> res;
 			m_select_fts_message.reset();
@@ -370,7 +370,7 @@ namespace memory
 		}
 		std::vector<select_fts_data> search_list_fts_limit(std::string_view fts, const std::size_t limit)
 		{
-			sqlite::transaction ts(m_db, sqlite::READ_ONLY);
+			sqlite::transaction ts(m_db);
 
 			std::vector<select_fts_data> res;
 			m_select_fts_message_limit.reset();
@@ -397,7 +397,7 @@ namespace memory
 
 		std::vector<select_fts_data> search_list_highlight_fts(std::string_view fts, std::string_view start, std::string_view end)
 		{
-			sqlite::transaction ts(m_db, sqlite::READ_ONLY);
+			sqlite::transaction ts(m_db);
 
 			std::vector<select_fts_data> res;
 			m_select_fts_highlight_message.reset();
@@ -424,7 +424,7 @@ namespace memory
 		}
 		std::vector<select_fts_data> search_list_highlight_fts_limit(std::string_view fts, std::string_view start, std::string_view end, const std::size_t limit)
 		{
-			sqlite::transaction ts(m_db, sqlite::READ_ONLY);
+			sqlite::transaction ts(m_db);
 
 			std::vector<select_fts_data> res;
 			m_select_fts_highlight_message_limit.reset();
@@ -456,7 +456,7 @@ namespace memory
 			ckeck_k(k);
 
 			constexpr faiss::idx_t limit = 1;
-			sqlite::transaction ts(m_db, sqlite::READ_ONLY);
+			sqlite::transaction ts(m_db);
 
 			auto vector = m_generate_vector_callback(message.data());
 			std::vector<faiss::idx_t> indices(k * limit); // 索引结果
@@ -498,7 +498,7 @@ namespace memory
 			check_limit(limit);
 			ckeck_k(k);
 
-			sqlite::transaction ts(m_db, sqlite::READ_ONLY);
+			sqlite::transaction ts(m_db);
 
 			auto vector = string_generate_vectors(message);
 			std::vector<faiss::idx_t> indices(k * limit); // 索引结果
