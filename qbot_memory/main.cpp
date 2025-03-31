@@ -71,12 +71,12 @@ int main()
 			std::println("sender_uuid:{} msg:{}", i5[0].sender_uuid, i5[0].message);
 			auto i6 = test1.search_list_vector_text("幻蓝", -1);
 		}
-		catch (const memory::exception::exception& e)
+		catch (const memory::exception::base_exception& e)
 		{
 			std::println("{}", e.what());
 		}
 	}
-	catch (const memory::exception::exception& e)
+	catch (const memory::exception::base_exception& e)
 	{
 		std::println("{}", e.what());
 	}
