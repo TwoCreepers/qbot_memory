@@ -124,7 +124,7 @@ namespace memory
 		{
 			m_db->set_wal_autocheckpoint(wal_autocheckpoint);
 		}
-		void wal_checkpoint(sqlite::checkpoint moed, std::string_view db_name, int* log, int* ckpt)
+		void wal_checkpoint(sqlite::checkpoint::checkpoint moed, std::string_view db_name, int* log, int* ckpt)
 		{
 			m_db->wal_checkpoint(moed, db_name, log, ckpt);
 		}

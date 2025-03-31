@@ -5,7 +5,6 @@
 #include <atomic>
 #include <cstdint>
 #include <format>
-#include <format>
 #include <functional>
 #include <memory>
 #include <sqlite3.h>
@@ -18,13 +17,16 @@
 
 namespace memory::sqlite
 {
-	enum checkpoint
+	namespace checkpoint
 	{
-		PASSIV = SQLITE_CHECKPOINT_PASSIVE,
-		FULL = SQLITE_CHECKPOINT_FULL,
-		RESTART = SQLITE_CHECKPOINT_RESTART,
-		TRUNCATE = SQLITE_CHECKPOINT_TRUNCATE
-	};
+		enum checkpoint
+		{
+			PASSIV = SQLITE_CHECKPOINT_PASSIVE,
+			FULL = SQLITE_CHECKPOINT_FULL,
+			RESTART = SQLITE_CHECKPOINT_RESTART,
+			TRUNCATE = SQLITE_CHECKPOINT_TRUNCATE
+		};
+	}
 
 	enum SQLite_Ty
 	{
@@ -196,13 +198,18 @@ namespace memory::sqlite
 				throw exception::bad_database(std::format("无法设置WAL自动检查点: {}\nSQL: {}", errMsg, sql));
 			}
 		}
-		void wal_checkpoint(checkpoint moed, std::string_view db_name, int* log, int* ckpt)
+		void wal_checkpoint(checkpoint::checkpoint moed, std::string_view db_name, int* log, int* ckpt)
 		{
 			auto res = sqlite3_wal_checkpoint_v2(m_db, db_name.data(),static_cast<int>(moed), log, ckpt);
 			if (res != SQLITE_OK)
 			{
 				const char* errMsg = errmsg();
-				throw exception::bad_database(std::format("WAL检查点错误: {}\n检查点模式: {}\nlog: {}\nckpt: {}", errMsg, moed, log, ckpt));
+				std::ostringstream oss;
+				oss << "WAL检查点错误: " << errMsg << "\n"
+					<< "检查点模式: " << moed << "\n"
+					<< "log: " << log << "\n"
+					<< "ckpt: " << ckpt;
+				throw exception::bad_database(oss.str());
 			}
 		}
 	private:
