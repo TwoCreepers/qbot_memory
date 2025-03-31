@@ -82,15 +82,12 @@ namespace memory
 	class database
 	{
 	public:
-		database(const fs::path& db_file_path, const fs::path& simple_path, const fs::path& simple_dict_path)
+		database(const fs::path& db_file_path, const fs::path& simple_path)
 			: m_db{ new sqlite::database(db_file_path.string()) },
 			m_db_file_path{ db_file_path }
 		{
 			m_db->enable_load_extension();
 			m_db->load_extension(simple_path.string());
-			sqlite::stmt jieba_dict_sql{ m_db, "SELECT jieba_dict(?);" };
-			jieba_dict_sql.bind(1, simple_dict_path.string(), SQLITE_STATIC);
-			jieba_dict_sql.step();
 
 			m_db->execute(R"(
 				CREATE TABLE IF NOT EXISTS __TABLE_MANAGE__ (
@@ -352,19 +349,18 @@ namespace memory
 		std::vector<select_fts_data> search_list_fts_impl(
 			const std::optional<std::string_view>& fts = {},
 			const std::optional<std::vector<std::string>>& simple_query = {},
-			const std::optional<std::vector<std::string>>& jieba_query = {},
 			const std::optional<std::string_view>& start = {},
 			const std::optional<std::string_view>& end = {},
 			const std::optional<std::size_t>& limit = {})
 		{
 			// 参数验证
-			if (fts.has_value() + simple_query.has_value() + jieba_query.has_value() != 1)
+			if (fts.has_value() + simple_query.has_value() != 1)
 			{
 				throw exception::invalid_argument("必须且只能提供一种查询类型(fts/simple_query/jieba_query)");
 			}
 
 			if ((simple_query.has_value() && simple_query->empty()) ||
-				(jieba_query.has_value() && jieba_query->empty()))
+				(fts.has_value() && fts->empty()))
 			{
 				throw exception::invalid_argument("查询参数不能为空");
 			}
@@ -386,21 +382,11 @@ namespace memory
 			{
 				query_type = "?";
 			}
-			else if (simple_query.has_value())
+			else
 			{
 				query_type = "simple_query";
 				arguments = "(?";
 				for (size_t i = 1; i < simple_query->size(); i++)
-				{
-					arguments += ", ?";
-				}
-				arguments += ")";
-			}
-			else
-			{ // jieba_query
-				query_type = "jieba_query";
-				arguments = "(?";
-				for (size_t i = 1; i < jieba_query->size(); i++)
 				{
 					arguments += ", ?";
 				}
@@ -430,16 +416,9 @@ namespace memory
 			{
 				select_stmt.bind(bind_index++, *fts, SQLITE_STATIC);
 			}
-			else if (simple_query.has_value())
+			else
 			{
 				for (const auto& term : *simple_query)
-				{
-					select_stmt.bind(bind_index++, term);
-				}
-			}
-			else
-			{ // jieba_query
-				for (const auto& term : *jieba_query)
 				{
 					select_stmt.bind(bind_index++, term);
 				}
