@@ -19,6 +19,6 @@ void register_database(py::module& m)
         .def("wal_checkpoint", &memory::database::wal_checkpoint,
             py::arg("mode"),
             py::arg("db_name"),
-            py::arg("log") = nullptr,
-            py::arg("ckpt") = nullptr);
+            py::arg("log") = NULL,
+            py::arg("ckpt") = NULL);
 }

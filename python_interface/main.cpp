@@ -1,4 +1,5 @@
 #define ENABLE_GET_GIL_BEFORE_CALL
+#define PYBIND11_DETAILED_ERROR_MESSAGES
 #include "register_ckeck.hpp"
 #include "register_data.hpp"
 #include "register_database.hpp"
