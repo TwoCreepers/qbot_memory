@@ -47,6 +47,11 @@ int main()
 {
 	try
 	{
+		{
+			auto db = std::make_shared<memory::database>(R"(C:\game\123\test\02\__test__.db)", R"(C:/game/source/SQLite_extension/simple.dll)");
+			auto path = db->db_file_path();
+			assert(path == fs::path(R"(C:\game\123\test\02\__test__.db)"));
+		}
 		auto db = std::make_shared<memory::database>(R"(C:\game\123\test\02\__test__.db)", R"(C:/game/source/SQLite_extension/simple.dll)");
 		try
 		{
@@ -71,6 +76,7 @@ int main()
 			auto i5 = test1.search_list_fts_impl("幻蓝", {}, "[", "]", {});
 			auto i7 = test1.search_list_fts_impl({}, std::vector<std::string>{ "幻蓝" }, "[", "]", {});
 			std::println("sender_uuid:{} msg:{}", i5[0].sender_uuid, i5[0].message);
+			auto i8 = test1.search_list_uuid("幻蓝");
 			//auto i6 = test1.search_list_vector_text("幻蓝", -1);
 			test1.full_rebuild_faiss_index();
 			test1.forgotten();
