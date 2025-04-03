@@ -218,19 +218,19 @@ namespace memory
 			}
 			ts.commit();
 		}
-		select_data search_id(const std::int64_t id)
+		std::optional<select_data> search_id(const std::int64_t id)
 		{
 			m_select_main_data_id.reset();
 			m_select_main_data_id.bind(1, id);
 			if (m_select_main_data_id.step() != SQLITE_ROW)
 			{
-				return;
+				return {};
 			}
-			return { m_select_main_data_id.get_column_uint64(0),
+			return { select_data{m_select_main_data_id.get_column_uint64(0),
 				m_select_main_data_id.get_column_uint64(1),
 				m_select_main_data_id.get_column_str(2),
 				m_select_main_data_id.get_column_str(3) ,
-				m_select_main_data_id.get_column_str(4) };
+				m_select_main_data_id.get_column_str(4)} };
 		}
 		std::vector<select_data> search_list_uuid(std::string_view uuid)
 		{
