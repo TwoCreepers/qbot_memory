@@ -22,23 +22,16 @@ namespace memory
 {
 	inline void check_limit(const faiss::idx_t limit)
 	{
-		if (limit <= 0)
+		if (limit < 1)
 		{
-			throw exception::invalid_argument(std::format("limit不能小于0, 但实际值为: {}", limit));
+			throw exception::invalid_argument(std::format("limit不能小于1, 但实际值为: {}", limit));
 		}
 	}
 	inline void ckeck_k(const faiss::idx_t k)
 	{
-		if (k <= 0)
+		if (k < 1)
 		{
-			throw exception::invalid_argument(std::format("k不能小于0, 但实际值为: {}", k));
-		}
-	}
-	inline void ckeck_id(const std::size_t id)
-	{
-		if (id <= 1)
-		{
-			throw exception::invalid_argument(std::format("id不能小于0, 但实际值为: {}", id));
+			throw exception::invalid_argument(std::format("k不能小于1, 但实际值为: {}", k));
 		}
 	}
 
@@ -121,9 +114,9 @@ namespace memory
 		{
 			m_db->set_wal_autocheckpoint(wal_autocheckpoint);
 		}
-		void wal_checkpoint(sqlite::checkpoint::checkpoint moed, std::string_view db_name, int* log, int* ckpt)
+		void wal_checkpoint(sqlite::checkpoint::checkpoint moed, std::string_view db_name, int& log, int& ckpt)
 		{
-			m_db->wal_checkpoint(moed, db_name, log, ckpt);
+			m_db->wal_checkpoint(moed, db_name, &log, &ckpt);
 		}
 	private:
 		const fs::path m_db_file_path;
@@ -225,18 +218,19 @@ namespace memory
 			}
 			ts.commit();
 		}
-		select_data search_id(const std::size_t id)
+		std::optional<select_data> search_id(const std::int64_t id)
 		{
-			ckeck_id(id);
-
 			m_select_main_data_id.reset();
 			m_select_main_data_id.bind(1, id);
-			m_select_main_data_id.step();
-			return { m_select_main_data_id.get_column_uint64(0),
+			if (m_select_main_data_id.step() != SQLITE_ROW)
+			{
+				return {};
+			}
+			return { select_data{m_select_main_data_id.get_column_uint64(0),
 				m_select_main_data_id.get_column_uint64(1),
 				m_select_main_data_id.get_column_str(2),
 				m_select_main_data_id.get_column_str(3) ,
-				m_select_main_data_id.get_column_str(4) };
+				m_select_main_data_id.get_column_str(4)} };
 		}
 		std::vector<select_data> search_list_uuid(std::string_view uuid)
 		{
@@ -245,7 +239,7 @@ namespace memory
 			m_select_main_sender_uuid.reset();
 			m_select_main_sender_uuid.bind(1, uuid);
 			std::vector<select_data> res;
-			while (m_select_main_sender_uuid.step())
+			while (m_select_main_sender_uuid.step() == SQLITE_ROW)
 			{
 				res.emplace_back(m_select_main_sender_uuid.get_column_uint64(0),
 					m_select_main_sender_uuid.get_column_uint64(1),
@@ -267,7 +261,7 @@ namespace memory
 			m_select_main_sender_uuid_limit.bind(1, uuid);
 			m_select_main_sender_uuid_limit.bind(2, limit);
 			std::vector<select_data> res;
-			while (m_select_main_sender_uuid_limit.step())
+			while (m_select_main_sender_uuid_limit.step() == SQLITE_ROW)
 			{
 				res.emplace_back(m_select_main_sender_uuid_limit.get_column_uint64(0),
 					m_select_main_sender_uuid_limit.get_column_uint64(1),
@@ -288,7 +282,7 @@ namespace memory
 			m_select_main_data_time_start.reset();
 			m_select_main_data_time_start.bind(1, start);
 			std::vector<select_data> res;
-			while (m_select_main_data_time_start.step())
+			while (m_select_main_data_time_start.step() == SQLITE_ROW)
 			{
 				res.emplace_back(m_select_main_data_time_start.get_column_uint64(0),
 					m_select_main_data_time_start.get_column_uint64(1),
@@ -309,7 +303,7 @@ namespace memory
 			m_select_main_data_time_end.reset();
 			m_select_main_data_time_end.bind(1, end);
 			std::vector<select_data> res;
-			while (m_select_main_data_time_end.step())
+			while (m_select_main_data_time_end.step() == SQLITE_ROW)
 			{
 				res.emplace_back(m_select_main_data_time_end.get_column_uint64(0),
 					m_select_main_data_time_end.get_column_uint64(1),
@@ -331,7 +325,7 @@ namespace memory
 			m_select_main_data_time_start_end.bind(1, start);
 			m_select_main_data_time_start_end.bind(2, end);
 			std::vector<select_data> res;
-			while (m_select_main_data_time_start_end.step())
+			while (m_select_main_data_time_start_end.step() == SQLITE_ROW)
 			{
 				res.emplace_back(m_select_main_data_time_start_end.get_column_uint64(0),
 					m_select_main_data_time_start_end.get_column_uint64(1),
@@ -436,7 +430,10 @@ namespace memory
 			{
 				m_select_main_data_id_no_message.reset();
 				m_select_main_data_id_no_message.bind(1, select_stmt.get_column_uint64(0));
-				m_select_main_data_id_no_message.step();
+				if (m_select_main_data_id_no_message.step() != SQLITE_ROW)
+				{
+					continue;
+				}
 				res.emplace_back(
 					m_select_main_data_id_no_message.get_column_uint64(0),
 					m_select_main_data_id_no_message.get_column_uint64(1),

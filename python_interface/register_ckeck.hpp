@@ -7,5 +7,4 @@ void register_ckecks(py::module_& m)
 {
     m.def("check_limit", &memory::check_limit, py::arg("limit"));
     m.def("ckeck_k", &memory::ckeck_k, py::arg("k"));
-    m.def("ckeck_id", &memory::ckeck_id, py::arg("id"));
 }
