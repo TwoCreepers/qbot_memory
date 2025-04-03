@@ -29,7 +29,7 @@ namespace memory
 	}
 	inline void ckeck_k(const faiss::idx_t k)
 	{
-		if (k <= 1)
+		if (k < 1)
 		{
 			throw exception::invalid_argument(std::format("k不能小于1, 但实际值为: {}", k));
 		}
