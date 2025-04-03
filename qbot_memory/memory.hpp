@@ -22,16 +22,16 @@ namespace memory
 {
 	inline void check_limit(const faiss::idx_t limit)
 	{
-		if (limit <= 0)
+		if (limit < 1)
 		{
-			throw exception::invalid_argument(std::format("limit不能小于0, 但实际值为: {}", limit));
+			throw exception::invalid_argument(std::format("limit不能小于1, 但实际值为: {}", limit));
 		}
 	}
 	inline void ckeck_k(const faiss::idx_t k)
 	{
-		if (k <= 0)
+		if (k <= 1)
 		{
-			throw exception::invalid_argument(std::format("k不能小于0, 但实际值为: {}", k));
+			throw exception::invalid_argument(std::format("k不能小于1, 但实际值为: {}", k));
 		}
 	}
 
