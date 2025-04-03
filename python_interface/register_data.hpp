@@ -8,7 +8,7 @@ void register_data(py::module_& m)
         .def(py::init<>())
         .def(py::init<std::size_t, std::string, std::string, std::string, double>(),
             py::arg("time"),
-            py::arg("sender"),
+            py::arg("sender") = "",
             py::arg("sender_uuid"),
             py::arg("message"),
             py::arg("forget_probability"))

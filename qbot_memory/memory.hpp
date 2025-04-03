@@ -34,13 +34,6 @@ namespace memory
 			throw exception::invalid_argument(std::format("k不能小于0, 但实际值为: {}", k));
 		}
 	}
-	inline void ckeck_id(const std::size_t id)
-	{
-		if (id <= 1)
-		{
-			throw exception::invalid_argument(std::format("id不能小于0, 但实际值为: {}", id));
-		}
-	}
 
 	struct insert_data
 	{
@@ -225,13 +218,14 @@ namespace memory
 			}
 			ts.commit();
 		}
-		select_data search_id(const std::size_t id)
+		select_data search_id(const std::int64_t id)
 		{
-			ckeck_id(id);
-
 			m_select_main_data_id.reset();
 			m_select_main_data_id.bind(1, id);
-			m_select_main_data_id.step();
+			if (m_select_main_data_id.step() != SQLITE_ROW)
+			{
+				return;
+			}
 			return { m_select_main_data_id.get_column_uint64(0),
 				m_select_main_data_id.get_column_uint64(1),
 				m_select_main_data_id.get_column_str(2),
@@ -436,7 +430,10 @@ namespace memory
 			{
 				m_select_main_data_id_no_message.reset();
 				m_select_main_data_id_no_message.bind(1, select_stmt.get_column_uint64(0));
-				m_select_main_data_id_no_message.step();
+				if (m_select_main_data_id_no_message.step() != SQLITE_ROW)
+				{
+					continue;
+				}
 				res.emplace_back(
 					m_select_main_data_id_no_message.get_column_uint64(0),
 					m_select_main_data_id_no_message.get_column_uint64(1),
