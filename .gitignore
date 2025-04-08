@@ -365,3 +365,6 @@ FodyWeavers.xsd
 # 运行时数据
 *.faiss
 *.db
+
+# 编译缓存
+version.ixx
