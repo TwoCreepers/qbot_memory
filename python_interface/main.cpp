@@ -6,6 +6,7 @@
 #include "register_sqlite_checkpoint.hpp"
 #include "register_synchronous_mode.hpp"
 #include "resister_table.hpp"
+#include "set_module_info.hpp"
 #include <py.hpp>
 #include <pybind11/detail/common.h>
 #include <pybind11/stl.h>
@@ -13,6 +14,7 @@ namespace py = pybind11;
 namespace me = memory;
 PYBIND11_MODULE(qbot_memory, m)
 {
+	set_module_info(m);
 	register_sqlite_checkpoint(m);
 	register_sqlite_synchronous_mode(m);
 	register_exceptions(m);
