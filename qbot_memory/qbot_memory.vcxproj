@@ -160,6 +160,7 @@
   <ItemGroup>
     <ClCompile Include="main.cpp" />
     <ClCompile Include="memory.hpp" />
+    <ClCompile Include="version.ixx" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="exception.hpp" />

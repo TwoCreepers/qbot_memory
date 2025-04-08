@@ -20,6 +20,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="version.ixx" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\qbot_memory\qbot_memory.vcxproj">
@@ -35,6 +36,7 @@
     <ClInclude Include="register_sqlite_checkpoint.hpp" />
     <ClInclude Include="register_synchronous_mode.hpp" />
     <ClInclude Include="resister_table.hpp" />
+    <ClInclude Include="set_module_info.hpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>

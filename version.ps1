@@ -129,14 +129,14 @@ export module version;
 import <string_view>;
 
 export namespace version {
-    inline constexpr std::string_view const GIT_HASH = "$git_hash";
-    inline constexpr std::string_view const GIT_TAG = "$git_tag";
-    inline constexpr std::string_view const GIT_COMMIT_TIME = "$git_commit_time";
-    inline constexpr std::string_view const GIT_BRANCH = "$git_branch";
-    inline constexpr std::string_view const BUILD_TIME = "$build_time";
-    inline constexpr std::string_view const VERSION = "$version";
-    inline constexpr std::string_view const PYTHON_VERSION = "$python_version";
-    inline constexpr std::string_view const PYBIND11_VERSION = "$pybind11_version";
+    inline std::string_view const GIT_HASH = "$git_hash";
+    inline std::string_view const GIT_TAG = "$git_tag";
+    inline std::string_view const GIT_COMMIT_TIME = "$git_commit_time";
+    inline std::string_view const GIT_BRANCH = "$git_branch";
+    inline std::string_view const BUILD_TIME = "$build_time";
+    inline std::string_view const VERSION = "$version";
+    inline std::string_view const PYTHON_VERSION = "$python_version";
+    inline std::string_view const PYBIND11_VERSION = "$pybind11_version";
 }
 "@
 

@@ -18,6 +18,9 @@
     <ClCompile Include="main.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="version.ixx">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="register_exceptions.hpp">
@@ -39,6 +42,9 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="register_synchronous_mode.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="set_module_info.hpp">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
